@@ -60,3 +60,8 @@ Makefile
 
 .vscode
 
+.dirstamp
+main.so
+bootx64.efi
+*.o
+*.a

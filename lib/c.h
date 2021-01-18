@@ -1,0 +1,1 @@
+int __libc_main();

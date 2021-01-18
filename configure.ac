@@ -4,8 +4,8 @@ AC_CONFIG_SRCDIR([efi-stage/mmap.c])
 AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE
-
-# AC_PROG_CC
+AM_PROG_AS
+AC_PROG_CC
 AC_PROG_RANLIB
 
 AC_CHECK_LIB([gcc], [main], 
