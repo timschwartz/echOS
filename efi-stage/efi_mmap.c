@@ -1,4 +1,4 @@
-#include "mmap.h"
+#include "efi_mmap.h"
 
 EFI_STATUS getEFIMemoryMap(EFI_SYSTEM_TABLE *SystemTable, efi_mmap_t *mmap)
 {
