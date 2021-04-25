@@ -13,3 +13,4 @@ typedef int int32_t;
 typedef unsigned int uint32_t;
 
 typedef uint64_t size_t;
+typedef int64_t off_t;

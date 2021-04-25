@@ -1,8 +1,6 @@
-#include <stack.h>
 #include <string.h>
+#include "memory/physical.h"
 
-void kernel_start(stack64_t *pageStack)
+void kernel_start(pmm *physical_memory)
 {
-    uint64_t *temp = (uint64_t *)stack64_pop(pageStack);
-    memset(temp, 0, 4096);
 }

@@ -65,3 +65,5 @@ main.so
 bootx64.efi
 *.o
 *.a
+*.la
+*.lo
