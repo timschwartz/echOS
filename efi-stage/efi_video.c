@@ -12,9 +12,10 @@ EFI_GRAPHICS_OUTPUT_PROTOCOL *get_gop(void)
         return NULL;
     }
 
+    uefi_call_wrapper(gop->SetMode, 2, gop, 9);
+
     Print(L"Found Graphics Output Protocol\n");
 
-    uefi_call_wrapper(gop->SetMode, 2, gop, 3);
     return gop;
 }
 
@@ -43,6 +44,14 @@ EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *get_graphics_info(void)
 
         if(i != gop->Mode->Mode) continue;
 
-        Print(L"Width %d, height %d, format %x%s\n", info->HorizontalResolution, info->VerticalResolution, info->PixelFormat);
+        Print(L"%d: Width %d, height %d, format %x\n", i, info->HorizontalResolution, info->VerticalResolution, info->PixelFormat);
+    }
+
+    for(size_t x = 0; x < 1280; x++)
+    {
+        for(size_t y = 0; y < 10; y++)
+        {
+            *((uint32_t*)(gop->Mode->FrameBufferBase + 4 * gop->Mode->Info->PixelsPerScanLine * y + 4 * x)) = 0x000070FF;
+        }
     }
 }
