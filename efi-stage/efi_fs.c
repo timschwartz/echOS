@@ -1,16 +1,9 @@
-#include <efi.h>
-#include <efilib.h>
-#include <string.h>
-const uint64_t kernel_size = 5;
-
-extern void kernel_start();
-void (*kernel_entry)();
+#include "efi_fs.h"
 
 void *efi_malloc(UINTN poolSize);
 
-EFI_STATUS
-EFIAPI
-efi_fopen (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable, CHAR16 *filename )
+EFI_STATUS EFIAPI 
+efi_fopen (EFI_SYSTEM_TABLE *SystemTable, EFI_FILE *file, CHAR16 *filename)
 {
     EFI_STATUS result = -1;
 
@@ -40,13 +33,11 @@ efi_fopen (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable, CHAR16 *filena
             Print(L"OpenVolume failed.\n");
         }
 
-        EFI_FILE *kernel_image = NULL;
-
-        result = uefi_call_wrapper(root->Open, 5, root, &kernel_image, filename, EFI_FILE_MODE_READ, 
+        result = uefi_call_wrapper(root->Open, 5, root, &file, filename, EFI_FILE_MODE_READ, 
                                    EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
         if(EFI_ERROR(result))
         {
-            Print(L"Couldn't find ELF kernel.\n");
+            Print(L"Couldn't find file %s. Error: %d\n", filename, result);
         }
         else
         {
@@ -59,4 +50,22 @@ efi_fopen (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable, CHAR16 *filena
     Print(L"Found %s.\n", filename);
 
     return result;
+}
+
+EFI_STATUS EFIAPI
+efi_fread(EFI_FILE *file, uint8_t *buffer)
+{
+    EFI_STATUS result;
+    EFI_GUID FILE_INFO = EFI_FILE_INFO_ID;
+    EFI_FILE_INFO *info;
+    size_t length;
+Print(L"  Calling GetInfo()\n");
+    result = uefi_call_wrapper(file->GetInfo, 4, file, &FILE_INFO, &length, info);
+    Print(L"Result: %d\n", result);
+    return result;
+//    result = file->GetInfo(file, &FILE_INFO, &length, info);
+//    length = info->FileSize;
+Print(L"File length: %d bytes\n", length);
+    buffer = (uint8_t *)efi_malloc(length);
+    return uefi_call_wrapper(file->Read, 3, file, &length, (void *)&buffer);
 }

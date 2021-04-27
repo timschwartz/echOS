@@ -3,6 +3,7 @@
 #include <string.h>
 #include "efi_pmm.h"
 #include "efi_video.h"
+#include "efi_fs.h"
 
 EFI_STATUS
 EFIAPI
@@ -17,8 +18,11 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
     Print(L"EFI loader start.\n");
 
-    get_graphics_info();
+    draw_border(10, 0, 0x000070FF);
 
+    EFI_FILE *fontfile = NULL;
+    efi_fopen(SystemTable, fontfile, L"EFI\\boot\\FreeSans.sfn");
+    setup_ssfn(fontfile);
 
 //    uefi_call_wrapper((void *)SystemTable->BootServices->ExitBootServices, 2, ImageHandle, mmap.key);
     for(;;);
