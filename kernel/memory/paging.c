@@ -1,6 +1,4 @@
 #include "paging.h"
-#include <efi.h>
-#include <efilib.h>
 
 page_table_entry init_pt_entry(pmm *physical_memory)
 {

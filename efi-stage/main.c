@@ -20,9 +20,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
     draw_border(10, 0, 0x000070FF);
 
-    EFI_FILE *fontfile = NULL;
-    efi_fopen(SystemTable, fontfile, L"EFI\\boot\\FreeSans.sfn");
-    setup_ssfn(fontfile);
+    setup_ssfn(L"EFI\\boot\\unifont.sfn");
 
 //    uefi_call_wrapper((void *)SystemTable->BootServices->ExitBootServices, 2, ImageHandle, mmap.key);
     for(;;);
