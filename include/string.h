@@ -10,3 +10,9 @@ void tims_function(void);
   *   \param n number of elements to write.
   */
 void *memset(void *s, int c, size_t n);
+
+/**
+  *
+  *
+  */
+size_t strlen(const char *str);

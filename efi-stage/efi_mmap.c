@@ -50,7 +50,7 @@ uint32_t getPageCountByType(efi_mmap_t mmap, uint8_t type)
 size_t countPhysicalMemoryBlocks(efi_mmap_t mmap)
 {
     size_t result = 0;
-    const uint8_t type = 7;
+    const uint8_t conventional_memory = 7;
 
     uint64_t offset = mmap.start;
     EFI_MEMORY_DESCRIPTOR *desc = NULL;
@@ -58,7 +58,7 @@ size_t countPhysicalMemoryBlocks(efi_mmap_t mmap)
     {
         desc = (EFI_MEMORY_DESCRIPTOR *)offset;
 
-        if(desc->Type != type)
+        if(desc->Type != conventional_memory)
         {
             offset += mmap.descriptorSize;
             continue;
@@ -74,7 +74,7 @@ size_t countPhysicalMemoryBlocks(efi_mmap_t mmap)
 
 EFI_STATUS setupPhysicalMemoryBlock(efi_mmap_t mmap, pm_block *block, const size_t block_index)
 {
-    const uint8_t type = 7;
+    const uint8_t conventional_memory = 7;
 
     uint64_t offset = mmap.start;
     size_t counter = 0;
@@ -83,7 +83,7 @@ EFI_STATUS setupPhysicalMemoryBlock(efi_mmap_t mmap, pm_block *block, const size
     {
         desc = (EFI_MEMORY_DESCRIPTOR *)offset;
 
-        if(desc->Type != type)
+        if(desc->Type != conventional_memory)
         {
             offset += mmap.descriptorSize;
             continue;
