@@ -48,8 +48,6 @@ uint8_t *efi_fread (CHAR16 *filename, size_t *length)
 
     if(EFI_ERROR(result)) for(;;);
 
-    Print(L"Found %s.\n", filename);
-
     EFI_GUID FILE_INFO = EFI_FILE_INFO_ID;
     EFI_FILE_INFO *info;
     size_t info_length = sizeof(EFI_FILE_INFO) + 200;

@@ -4,6 +4,8 @@
 #include "ssfn.h"
 #include <string.h>
 
+uint16_t ssfn_margin = 0;
+
 EFI_GRAPHICS_OUTPUT_PROTOCOL *get_gop(void)
 {
     EFI_GUID gopGuid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
@@ -49,7 +51,6 @@ EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *get_graphics_info(void)
 void draw_border(size_t width, size_t offset, uint32_t pixel)
 {
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gop = get_gop();
-    EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *info = get_graphics_info();
 
     size_t screen_width = gop->Mode->Info->HorizontalResolution;
     size_t screen_height = gop->Mode->Info->VerticalResolution;
@@ -87,10 +88,9 @@ void draw_border(size_t width, size_t offset, uint32_t pixel)
     }
 }
 
-void setup_ssfn(CHAR16 *filename)
+void ssfn_setup(CHAR16 *filename, uint16_t margin)
 {
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gop = get_gop();
-    EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *info = get_graphics_info();
 
     size_t screen_width = gop->Mode->Info->HorizontalResolution;
     size_t screen_height = gop->Mode->Info->VerticalResolution;
@@ -103,14 +103,24 @@ void setup_ssfn(CHAR16 *filename)
     ssfn_dst.p = 4 * gop->Mode->Info->PixelsPerScanLine;
     ssfn_dst.fg = 0xFFFFFFFF;
     ssfn_dst.bg = 0;
-    ssfn_dst.x = 20;
-    ssfn_dst.y = 20;
- 
-    char *message = "Hello\nworld\0";
+    ssfn_dst.x = margin;
+    ssfn_dst.y = margin;
+
+    ssfn_margin = margin;
+}
+
+void ssfn_printf(char *message)
+{
+    EFI_GRAPHICS_OUTPUT_PROTOCOL *gop = get_gop();
+
+    size_t screen_width = gop->Mode->Info->HorizontalResolution - ssfn_margin - 5;
+    size_t screen_height = gop->Mode->Info->VerticalResolution;
+
     for(size_t i = 0; i < strlen(message); i++)
     {
         ssfn_putc(message[i]);
-        if(ssfn_dst.x < 20) ssfn_dst.x = 20;
-        if(ssfn_dst.y < 20) ssfn_dst.y = 20;
+        if(ssfn_dst.x > screen_width) ssfn_putc('\n');
+        if(ssfn_dst.x < ssfn_margin) ssfn_dst.x = ssfn_margin;
+        if(ssfn_dst.y < ssfn_margin) ssfn_dst.y = ssfn_margin;
     }
 }
