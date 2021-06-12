@@ -80,27 +80,14 @@ uint64_t get_cr(size_t index)
     return cr[index];
 }
 
-/*
+#if 0
 void set_cr3(uint64_t entry)
 {
     __asm__ __volatile__ (
         "
     );
 }
-
-    uint64_t cr0 = 0, cr2 = 0, cr3 = 0, cr4 = 0;
-    __asm__ __volatile__ (
-        "mov %%cr0, %%rax\n\t"
-        "mov %%eax, %0\n\t"
-        "mov %%cr2, %%rax\n\t"
-        "mov %%eax, %1\n\t"
-        "mov %%cr3, %%rax\n\t"
-        "mov %%eax, %2\n\t"
-    : "=m" (cr0), "=m" (cr2), "=m" (cr3)
-    : // no input
-    : "%rax"
-    );
-*/
+#endif
 
 void *mmap(void *start, size_t length, int prot, int flags, 
            int fd, off_t offset)
