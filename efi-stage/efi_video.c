@@ -101,12 +101,18 @@ void ssfn_setup(CHAR16 *filename, uint16_t margin)
     ssfn_src = (ssfn_font_t *)free_sans_sfn;
     ssfn_dst.ptr = (uint8_t *)gop->Mode->FrameBufferBase;
     ssfn_dst.p = 4 * gop->Mode->Info->PixelsPerScanLine;
-    ssfn_dst.fg = 0xFFFFFFFF;
-    ssfn_dst.bg = 0;
     ssfn_dst.x = margin;
     ssfn_dst.y = margin;
 
+    ssfn_set_color(0xFFFFFFFF, 0x0);
+
     ssfn_margin = margin;
+}
+
+void ssfn_set_color(uint32_t foreground, uint32_t background)
+{
+    ssfn_dst.fg = foreground;
+    ssfn_dst.bg = background;
 }
 
 void ssfn_printf(char *message)
