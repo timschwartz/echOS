@@ -84,7 +84,6 @@ uint64_t get_cr(size_t index)
 void set_cr3(uint64_t entry)
 {
     __asm__ __volatile__ (
-        "
     );
 }
 #endif
