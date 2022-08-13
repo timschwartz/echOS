@@ -17,6 +17,9 @@ AC_SUBST(GCC_LIBS)
 KERNEL_LIBS="-L${ac_abs_confdir}/lib/.libs -l:libk.a"
 AC_SUBST(KERNEL_LIBS)
 
+LIBC_LIBS="-L${ac_abs_confdir}/lib/.libs -l:libc.a"
+AC_SUBST(LIBC_LIBS)
+
 EFI_STAGE_LIBS="-L${ac_abs_confdir}/lib/.libs -l:libefi_stage.a"
 AC_SUBST(EFI_STAGE_LIBS)
 
