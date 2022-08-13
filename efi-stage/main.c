@@ -4,10 +4,32 @@
 #include "efi_pmm.h"
 #include "efi_video.h"
 #include "efi_fs.h"
+#include "efi_random.h"
 #include "../config.h"
 
 const uint32_t cyan = 0x0000FFFF;
 const uint32_t blue = 0x000070FF;
+const uint32_t white = 0xFFFFFFFF;
+const uint32_t black = 0x00000000;
+
+typedef struct __attribute__((__packed__))
+{
+    uint16_t limit;
+    uint64_t base;
+} gdt_desc;
+
+gdt_desc get_gdt()
+{
+    gdt_desc gdt;
+    __asm__ __volatile__ (
+    "sgdt %0"
+    : "=m" (gdt)
+    : /* no input */
+    : "memory"
+    );
+
+    return gdt;
+}
 
 EFI_STATUS
 EFIAPI
@@ -22,15 +44,22 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
     draw_border(10, 0, blue);
 
-    ssfn_setup(L"EFI\\boot\\unifont.sfn", 20);
+    ssfn_setup(L"\\EFI\\boot\\unifont.sfn", 20);
     ssfn_printf(PACKAGE_STRING);
+
+    ssfn_set_color(0xFFFFFF00, 0xFFFF00FF);
     ssfn_printf(" EFI bootloader\n\n");
 
-    ssfn_printf("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\n");
+    ssfn_set_color(cyan, 0);
+    gdt_desc gdt = get_gdt();
+    Print (L"GDTR Base: 0x%X\n", gdt.base);
+    Print (L"GDTR Limit: 0x%X\n", gdt.limit);
 
-    ssfn_printf("Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?\n\n");
-
-   ssfn_printf("At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.\n\n");
+    for(uint16_t counter = 0; counter < ((gdt.limit + 1) / sizeof(uint64_t)); counter++)
+    {
+        uint64_t *desc = (uint64_t *)(gdt.base + (counter * sizeof(uint64_t)));
+        Print (L"GDT %d: 0x%X\n", counter, *desc);
+    }
 //    uefi_call_wrapper((void *)SystemTable->BootServices->ExitBootServices, 2, ImageHandle, mmap.key);
     for(;;);
 

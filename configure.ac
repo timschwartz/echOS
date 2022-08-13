@@ -1,6 +1,6 @@
 AC_PREREQ([2.69])
 AC_INIT([os], [0.0.1], [tim@metaverse.systems])
-AC_CONFIG_SRCDIR([efi-stage/mmap.c])
+AC_CONFIG_SRCDIR([efi-stage/efi_mmap.c])
 AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE
