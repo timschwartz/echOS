@@ -115,18 +115,57 @@ void ssfn_set_color(uint32_t foreground, uint32_t background)
     ssfn_dst.bg = background;
 }
 
-void ssfn_printf(char *message)
+void ssfn_put(char c, size_t screen_width, size_t screen_height)
 {
+    ssfn_putc(c);
+    if(ssfn_dst.x > screen_width) ssfn_putc('\n');
+    if(ssfn_dst.x < ssfn_margin) ssfn_dst.x = ssfn_margin;
+    if(ssfn_dst.y < ssfn_margin) ssfn_dst.y = ssfn_margin;
+}
+
+int ssfn_printf(char *format, ...)
+{
+    va_list values;
+    va_start(values, format);
+
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gop = get_gop();
 
     size_t screen_width = gop->Mode->Info->HorizontalResolution - ssfn_margin - 5;
     size_t screen_height = gop->Mode->Info->VerticalResolution;
 
-    for(size_t i = 0; i < strlen(message); i++)
+    char temp[32] = {0};
+    int written = 0;
+    for(size_t i = 0; i < strlen(format); i++)
     {
-        ssfn_putc(message[i]);
-        if(ssfn_dst.x > screen_width) ssfn_putc('\n');
-        if(ssfn_dst.x < ssfn_margin) ssfn_dst.x = ssfn_margin;
-        if(ssfn_dst.y < ssfn_margin) ssfn_dst.y = ssfn_margin;
+        if(format[i] == '%')
+        {
+            i++;
+            switch(format[i])
+            {
+                case 'd':
+                    i++;
+                    int d_value = va_arg(values, int);
+                    itoa(d_value, temp, 10);
+                    for(size_t counter = 0; counter < strlen(temp); counter++)
+                    {
+                        ssfn_put(temp[counter], screen_width, screen_height);
+                        written++;
+                    }
+                    break;
+                case 's':
+                    i++;
+                    char *s_value = va_arg(values, char *);
+                    for(size_t counter = 0; counter < strlen(s_value); counter++)
+                    {
+                        ssfn_put(s_value[counter], screen_width, screen_height);
+                        written++;
+                    }
+                    break;
+            }
+        }
+
+        ssfn_put(format[i], screen_width, screen_height);
+        written++;
     }
+    return written;
 }
