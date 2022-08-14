@@ -1,7 +1,11 @@
 #pragma once
 #include <stdint.h>
 
-void tims_function(void);
+/**
+  *
+  *
+  */
+char *itoa(int num, char *str, int base);
 
 /**
   *
