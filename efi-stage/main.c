@@ -27,6 +27,21 @@ rsdp2_desc *get_rsdp2(EFI_SYSTEM_TABLE *SystemTable)
     }
 }
 
+void dump_gdt()
+{
+    gdt_desc gdt = get_gdt();
+    size_t count = (gdt.limit + 1) / sizeof(uint64_t);
+    ssfn_printf("GDTR Base: 0x%x\n", gdt.base);
+    ssfn_printf("GDTR Limit: 0x%x\n", gdt.limit);
+    ssfn_printf("GDT has %d entries\n", count);
+
+    for(uint16_t counter = 0; counter < count; counter++)
+    {
+        uint64_t *desc = (uint64_t *)(gdt.base + (counter * sizeof(uint64_t)));
+        ssfn_printf("GDT %d: 0x%x\n", counter, *desc);
+    }
+}
+
 void dump_sdt_header(sdt_header *sdt)
 {
     char sig[5] = {0};
@@ -44,17 +59,41 @@ void dump_sdt_header(sdt_header *sdt)
     ssfn_printf("OEMTableID: %s\n", oemtable);
 }
 
-gdt_desc get_gdt()
+void dump_apic_header(APIC *apic)
 {
-    gdt_desc gdt;
-    __asm__ __volatile__ (
-    "sgdt %0"
-    : "=m" (gdt)
-    : /* no input */
-    : "memory"
-    );
+    dump_sdt_header(&(apic->header));
 
-    return gdt;
+    ssfn_printf("Local APIC address: 0x%x\n", apic->LocalAPICAddress);
+    ssfn_printf("Flags: 0x%x\n", apic->flags);
+}
+
+void dump_apic_entries(APIC *apic)
+{
+    size_t entries_size = apic->header.Length - sizeof(APIC);
+    uint64_t offset = (uint64_t)&apic->entries;
+    size_t pos = 0;
+    madt_header *entry;
+    while(pos < entries_size)
+    {
+        entry = (madt_header *)offset;
+        switch(entry->EntryType)
+        {
+            case 0:
+                madt_processor *cpu = (madt_processor *)entry;
+                ssfn_printf("Found CPU. ID: %d. APIC ID: %d. ", cpu->ProcessorID, cpu->APICID);
+                ssfn_printf("Enabled: %s. Online capable: %s.\n", cpu->flags & 0x1 ? "Yes" : "No", (cpu->flags >> 1) & 0x1 ? "Yes" : "No");
+                break;
+            case 1:
+                madt_ioapic *ioapic = (madt_ioapic *)entry;
+                ssfn_printf("Found IO APIC. ID: %d. IO APIC address: 0x%x. Interrupt base: 0x%x\n", ioapic->ID, ioapic->Address, ioapic->InterruptBase);
+                break;
+            default:
+                ssfn_printf("Offset: 0x%x, Entry type: %d, length: %d bytes\n", offset, entry->EntryType, entry->RecordLength);
+                break;
+        }
+        pos += entry->RecordLength;
+        offset += entry->RecordLength;
+    }
 }
 
 EFI_STATUS
@@ -82,21 +121,10 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
     APIC *apic = (APIC *)xsdt_get_table(rsdp, "APIC");
 
-    dump_sdt_header(&(apic->header));
+    ssfn_printf("Looking for CPUs\n");
+    ssfn_printf("Found %d CPUs\n", madt_get_processor_local_apic_count(apic));
 
-#if 0
-    gdt_desc gdt = get_gdt();
-    Print (L"GDTR Base: 0x%X\n", gdt.base);
-    Print (L"GDTR Limit: 0x%X\n", gdt.limit);
-
-    for(uint16_t counter = 0; counter < ((gdt.limit + 1) / sizeof(uint64_t)); counter++)
-    {
-        uint64_t *desc = (uint64_t *)(gdt.base + (counter * sizeof(uint64_t)));
-        Print (L"GDT %d: 0x%X\n", counter, *desc);
-    }
-#endif
-
-
+    dump_gdt();
 
 //    uefi_call_wrapper((void *)SystemTable->BootServices->ExitBootServices, 2, ImageHandle, mmap.key);
     for(;;);

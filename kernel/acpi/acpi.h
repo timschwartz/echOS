@@ -42,6 +42,23 @@ typedef struct __attribute__((__packed__))
 
 typedef struct __attribute__((__packed__))
 {
+    madt_header header;
+    uint8_t ProcessorID;
+    uint8_t APICID;
+    uint32_t flags;
+} madt_processor;
+
+typedef struct __attribute__((__packed__))
+{
+    madt_header header;
+    uint8_t ID;
+    uint8_t reserved;
+    uint32_t Address;
+    uint32_t InterruptBase;
+} madt_ioapic;
+
+typedef struct __attribute__((__packed__))
+{
     sdt_header header;
     uint32_t LocalAPICAddress;
     uint32_t flags;
@@ -56,7 +73,8 @@ typedef struct __attribute__((__packed__))
 typedef struct __attribute__((__packed__))
 {
     sdt_header header;
-    uint64_t ptr[32];
+    uint64_t ptr[0];
 } XSDT;
 
+size_t madt_get_processor_local_apic_count(APIC *apic);
 void *xsdt_get_table(rsdp2_desc *rsdp, char signature[4]);
