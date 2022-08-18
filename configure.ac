@@ -35,5 +35,6 @@ AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  lib/string/Makefile
                  lib/stdlib/Makefile
+                 lib/stdio/Makefile
                  kernel/Makefile])
 AC_OUTPUT
