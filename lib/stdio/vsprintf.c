@@ -26,6 +26,12 @@ int vsprintf(char *str, const char *format, va_list arg)
             i++;
             switch(format[i])
             {
+                case 'c':
+                    i++;
+                    uint8_t c_value = va_arg(arg, int);
+                    str[written] = c_value;
+                    written++;
+                    break;
                 case 'd':
                     i++;
                     int d_value = va_arg(arg, int);
@@ -51,7 +57,7 @@ int vsprintf(char *str, const char *format, va_list arg)
                     char *s_value = va_arg(arg, char *);
                     for(size_t counter = 0; counter < strlen(s_value); counter++)
                     {
-                        str[written] = temp[counter];
+                        str[written] = s_value[counter];
                         written++;
                     }
                     break;
