@@ -1,7 +1,7 @@
 #include <efi.h>
 #include <efilib.h>
 
-void *efi_malloc(UINTN poolSize)
+void *efi_malloc(uint64_t poolSize)
 {
     EFI_STATUS status;
     void *handle;
