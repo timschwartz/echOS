@@ -1,6 +1,6 @@
 #pragma once
 #include <efi.h>
 #include <efilib.h>
-#include "../kernel/memory/physical.h"
+#include "../kernel/kernel.h"
 
-pmm *init_pmm(EFI_SYSTEM_TABLE *SystemTable);
+EFI_STATUS init_pmm(EFI_SYSTEM_TABLE *SystemTable, colonel_t *system);

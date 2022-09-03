@@ -1,9 +1,8 @@
 #include "efi_pmm.h"
 #include "efi_mmap.h"
+#include "efi_malloc.h"
 
-void *efi_malloc(UINTN poolSize);
-
-pmm *init_pmm(EFI_SYSTEM_TABLE *SystemTable)
+EFI_STATUS init_pmm(EFI_SYSTEM_TABLE *SystemTable, colonel_t *system)
 {
     efi_mmap_t mmap = { 0, 0, 0, 0, 0 };
     if(getEFIMemoryMap(SystemTable, &mmap) != EFI_SUCCESS)
@@ -30,5 +29,7 @@ pmm *init_pmm(EFI_SYSTEM_TABLE *SystemTable)
         for(size_t j = 0; j < map_size; j++) block->map[j] = 0;
     }
 
-    return physical_memory;
+    system->physical_memory = physical_memory;
+    system->mmap_key = mmap.key;
+    return EFI_SUCCESS;
 }

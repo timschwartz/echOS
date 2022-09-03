@@ -14,7 +14,7 @@ gdt_desc gdt_get()
     return gdt;
 }
 
-void gdt_set(gdt_desc *gdt)
+void gdt_set(gdt_desc gdt)
 {
     __asm__ __volatile__ (
     "lgdt %0"
@@ -24,15 +24,16 @@ void gdt_set(gdt_desc *gdt)
     );
 }
 
-gdt_desc gdt_init(size_t count, void *(*malloc)(uint64_t))
+gdt_desc *gdt_init(size_t count, void *(*malloc)(uint64_t))
 {
     size_t length = count * 8;
 
-    gdt_desc gdt = { .limit = length - 1 };
+    gdt_desc *gdt = (gdt_desc *)malloc(sizeof(gdt_desc));
+    gdt->limit = length - 1;
 
-    gdt.base = (uint64_t)malloc(length);
+    gdt->base = (uint64_t)malloc(length);
 
-    memset((uint64_t *)(gdt.base), 0, length);
+    memset((uint64_t *)(gdt->base), 0, length);
 
     return gdt;
 }
