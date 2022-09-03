@@ -1,6 +1,5 @@
 #include "efi_fs.h"
-
-void *efi_malloc(UINTN poolSize);
+#include "efi_malloc.h"
 
 uint8_t *efi_fread (CHAR16 *filename, size_t *length)
 {

@@ -1,5 +1,6 @@
 #include <efi.h>
 #include <efilib.h>
+#include "efi_malloc.h"
 
 void *efi_malloc(uint64_t poolSize)
 {
