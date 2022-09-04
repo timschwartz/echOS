@@ -35,25 +35,25 @@
 #define LT_OBJDIR ".libs/"
 
 /* Name of package */
-#define PACKAGE "os"
+#define PACKAGE "echos"
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "tim@metaverse.systems"
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "os"
+#define PACKAGE_NAME "echOS"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "os 0.0.1"
+#define PACKAGE_STRING "echOS 0.0.2"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "os"
+#define PACKAGE_TARNAME "echos"
 
 /* Define to the home page for this package. */
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.0.1"
+#define PACKAGE_VERSION "0.0.2"
 
 /* Define to 1 if all of the C90 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
@@ -61,4 +61,4 @@
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "0.0.1"
+#define VERSION "0.0.2"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export SYSTEM_ROOT=${DEV_ROOT}/os
+export SYSTEM_ROOT=${DEV_ROOT}/echOS
 export INCLUDE_DIRS="-I /usr/include/efi /usr/include/efi/x86_64"
 export CC=${DEV_ROOT}/cross/bin/x86_64-elf-gcc
 export LD=${DEV_ROOT}/cross/bin/x86_64-elf-ld
