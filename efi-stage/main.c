@@ -5,6 +5,7 @@
 #include "efi_fs.h"
 #include "efi_malloc.h"
 #include "../kernel/kernel.h"
+#include "../kernel/drivers/ssfn_fb.h"
 #include "../config.h"
 
 const uint32_t cyan = 0x0000FFFF;
@@ -37,34 +38,42 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut);
     SystemTable->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
 
-    draw_border(5, 0, blue);
-
-    ssfn_setup(L"\\EFI\\boot\\unifont.sfn", 10);
-    ssfn_printf(PACKAGE_STRING);
-
-    ssfn_set_color(cyan, 0);
-    ssfn_printf(" EFI bootloader\n\n");
-
-    ssfn_set_color(white, 0);
-
     colonel_t system;
+    system.fb = framebuffer_init(10);
+    if(efi_fread(L"\\EFI\\boot\\unifont.sfn", &system.fb.font_size, &system.fb.font) != EFI_SUCCESS)
+    {
+        Print(L"Couldn't open \\EFI\\boot\\unifont.sfn\n");
+        goto hang;
+    }
+
+    Print(L"%a\n\n", PACKAGE_STRING);
+    Print(L"EFI bootloader\n");
+
     system.rsdp2 = get_rsdp2(SystemTable);
     if(init_pmm(SystemTable, &system) != EFI_SUCCESS)
     {
-        ssfn_printf("Could not initialize physical memory map.\n");
+        Print(L"Could not initialize physical memory map.\n");
         goto hang;
     }
-    ssfn_printf("Setup physical memory map.\n");
+    size_t frame_count = 0;
+    for(size_t i = 0; i < system.physical_memory->block_count; i++)
+    {
+        frame_count += system.physical_memory->blocks[i]->frames_total;
+    }
+    size_t ram_size = (frame_count * 4096) / 1024 / 1024;
+    Print(L"Initialized physical memory map...%dMB\n", ram_size);
     system.gdt = gdt_init(5, &efi_malloc);
-    system.printf = &ssfn_printf;
 
     uefi_call_wrapper((void *)SystemTable->BootServices->ExitBootServices, 2, ImageHandle, system.mmap_key);
     kernel_start(system);
 
-    ssfn_printf("You shouldn't be here.\n");
+    Print(L"You shouldn't be here.\n");
 
 hang:
-    for(;;);
+    for(;;)
+    {
+        __asm__ ("hlt");
+    }
 
     return result;
 }

@@ -1,11 +1,4 @@
 #include "efi_video.h"
-#include "efi_fs.h"
-#define SSFN_CONSOLEBITMAP_TRUECOLOR
-#include "ssfn.h"
-#include <string.h>
-#include <stdio.h>
-
-uint16_t ssfn_margin = 0;
 
 EFI_GRAPHICS_OUTPUT_PROTOCOL *get_gop(void)
 {
@@ -49,98 +42,15 @@ EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *get_graphics_info(void)
     return info;
 }
 
-void draw_border(size_t width, size_t offset, uint32_t pixel)
+framebuffer_t framebuffer_init(size_t margin)
 {
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gop = get_gop();
 
-    size_t screen_width = gop->Mode->Info->HorizontalResolution;
-    size_t screen_height = gop->Mode->Info->VerticalResolution;
-
-    for(size_t x = offset; x < screen_width - offset; x++)
-    {
-        for(size_t y = offset; y < width + offset; y++)
-        {
-            *((uint32_t*)(gop->Mode->FrameBufferBase + 4 * gop->Mode->Info->PixelsPerScanLine * y + 4 * x)) = pixel;
-        }
-    }
-
-    for(size_t x = offset; x < screen_width - offset; x++)
-    {
-        for(size_t y = (screen_height - width - offset); y < screen_height - offset; y++)
-        {
-            *((uint32_t*)(gop->Mode->FrameBufferBase + 4 * gop->Mode->Info->PixelsPerScanLine * y + 4 * x)) = pixel;
-        }
-    }
-
-    for(size_t y = offset; y < screen_height - offset; y++)
-    {
-        for(size_t x = offset; x < width + offset; x++)
-        {
-            *((uint32_t*)(gop->Mode->FrameBufferBase + 4 * gop->Mode->Info->PixelsPerScanLine * y + 4 * x)) = pixel;
-        }
-    }
-
-    for(size_t y = offset; y < screen_height - offset; y++)
-    {
-        for(size_t x = screen_width - width - offset; x < screen_width - offset; x++)
-        {
-            *((uint32_t*)(gop->Mode->FrameBufferBase + 4 * gop->Mode->Info->PixelsPerScanLine * y + 4 * x)) = pixel;
-        }
-    }
-}
-
-void ssfn_setup(CHAR16 *filename, uint16_t margin)
-{
-    EFI_GRAPHICS_OUTPUT_PROTOCOL *gop = get_gop();
-
-    size_t screen_width = gop->Mode->Info->HorizontalResolution;
-    size_t screen_height = gop->Mode->Info->VerticalResolution;
-
-    size_t length;
-    uint8_t *free_sans_sfn = efi_fread(filename, &length);
-
-    ssfn_src = (ssfn_font_t *)free_sans_sfn;
-    ssfn_dst.ptr = (uint8_t *)gop->Mode->FrameBufferBase;
-    ssfn_dst.p = 4 * gop->Mode->Info->PixelsPerScanLine;
-    ssfn_dst.x = margin;
-    ssfn_dst.y = margin;
-
-    ssfn_set_color(0xFFFFFFFF, 0x0);
-
-    ssfn_margin = margin;
-}
-
-void ssfn_set_color(uint32_t foreground, uint32_t background)
-{
-    ssfn_dst.fg = foreground;
-    ssfn_dst.bg = background;
-}
-
-void ssfn_put(char c, size_t screen_width, size_t screen_height)
-{
-    ssfn_putc(c);
-    if(ssfn_dst.x > screen_width) ssfn_putc('\n');
-    if(ssfn_dst.x < ssfn_margin) ssfn_dst.x = ssfn_margin;
-    if(ssfn_dst.y < ssfn_margin) ssfn_dst.y = ssfn_margin;
-}
-
-int ssfn_printf(char *format, ...)
-{
-    va_list values;
-    va_start(values, format);
-
-    EFI_GRAPHICS_OUTPUT_PROTOCOL *gop = get_gop();
-
-    size_t screen_width = gop->Mode->Info->HorizontalResolution - ssfn_margin - 5;
-    size_t screen_height = gop->Mode->Info->VerticalResolution;
-
-    char output[1024] = {0};
-    int written = vsprintf(output, format, values);
-    
-    for(int i = 0; i < written; i++)
-    {
-        ssfn_put(output[i], screen_width, screen_height);
-    }
-    written++;
-    return written;
+    framebuffer_t fb;
+    fb.width = gop->Mode->Info->HorizontalResolution;
+    fb.height = gop->Mode->Info->VerticalResolution;
+    fb.pixels_per_scanline = gop->Mode->Info->PixelsPerScanLine;
+    fb.buffer = (uint8_t *)gop->Mode->FrameBufferBase;
+    fb.margin = margin;
+    return fb;
 }

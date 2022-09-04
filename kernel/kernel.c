@@ -1,9 +1,12 @@
 #include <string.h>
 #include "kernel.h"
+#include "drivers/ssfn_fb.h"
 
 void kernel_start(colonel_t system)
 {
-    system.printf("Hello from kernel\n");
+    ssfn_setup(system.fb);
+    ssfn_set_color(0xFFFFFFFF, 0);
+    ssfn_printf(system.fb, "Starting kernel...\n");
 
     /* Setup GDT */
     // Null segment
@@ -27,10 +30,10 @@ void kernel_start(colonel_t system)
     gdt_entry_add(system.gdt, 4, e);
 
     gdt_set(*(system.gdt));
-    system.printf("Setup GDT at 0x%x\n", system.gdt->base);
+    ssfn_printf(system.fb, "Setup GDT at 0x%x\n", system.gdt->base);
     /* End setup GDT */
 
-    for(;;);
+    for(;;) __asm__ ("hlt");
 
-    system.printf("You escaped somehow\n");
+    ssfn_printf(system.fb, "You escaped somehow\n");
 }
