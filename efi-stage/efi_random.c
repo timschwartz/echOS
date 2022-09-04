@@ -26,9 +26,6 @@ void srand(uint32_t seed)
 
 void efi_seed()
 {
-    ssfn_set_color(0xFFFFFFFF, 0);
-    ssfn_printf("efi_seed()\n");
-
     EFI_TIME time;
     RT->GetTime(&time, NULL);
     Print(L"Setting seed to %d\n", time.Nanosecond);
