@@ -2,12 +2,12 @@ AC_PREREQ([2.69])
 AC_INIT([echOS], [0.0.2], [tim@metaverse.systems])
 AC_CONFIG_SRCDIR([efi-stage/efi_mmap.c])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIRS([m4])
 
 AM_INIT_AUTOMAKE
 LT_INIT([disable-static])
 AM_PROG_AS
 AC_PROG_CC
-#AC_PROG_RANLIB
 
 AC_CHECK_LIB([gcc], [main], 
   [HAVE_GCC=1] [GCC_LIBS="-L${ac_abs_confdir}/../cross/lib/gcc/x86_64-elf/10.2.0 -lgcc"], 

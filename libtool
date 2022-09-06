@@ -41,7 +41,7 @@ macro_version=2.4.7
 macro_revision=2.4.7
 
 # Whether or not to build static libraries.
-build_old_libs=no
+build_old_libs=yes
 
 # Whether or not to build shared libraries.
 build_libtool_libs=yes
@@ -50,7 +50,7 @@ build_libtool_libs=yes
 pic_mode=default
 
 # Whether or not to optimize for fast installation.
-fast_install=needless
+fast_install=yes
 
 # Shared archive member basename,for filename based shared library versioning on AIX.
 shared_archive_member_spec=
@@ -167,10 +167,10 @@ old_postuninstall_cmds=""
 lock_old_archive_extraction=no
 
 # A C compiler.
-LTCC="gcc"
+LTCC="/home/tim/projects/timschwartz/osdev/cross/bin/x86_64-elf-gcc"
 
 # LTCC compiler flags.
-LTCFLAGS="-g -O2 -I../include"
+LTCFLAGS="-I /usr/include/efi -I /usr/include/efi/x86_64 -I /home/tim/projects/timschwartz/osdev/echOS/include -I../include"
 
 # Take the output of nm and produce a listing of raw symbols and C names.
 global_symbol_pipe="/usr/bin/sed -n -e 's/^.*[	 ]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[	 ][	 ]*\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2 \\2/p' | /usr/bin/sed '/ __gnu_lto/d'"
@@ -255,7 +255,7 @@ runpath_var=LD_RUN_PATH
 shlibpath_var=LD_LIBRARY_PATH
 
 # Is shlibpath searched before the hard-coded library search path?
-shlibpath_overrides_runpath=yes
+shlibpath_overrides_runpath=no
 
 # Format of library name prefix.
 libname_spec="lib\$name"
@@ -287,7 +287,7 @@ finish_eval=""
 hardcode_into_libs=yes
 
 # Compile-time system search path for libraries.
-sys_lib_search_path_spec="/usr/lib/gcc/x86_64-linux-gnu/12 /usr/lib/x86_64-linux-gnu /usr/lib /lib/x86_64-linux-gnu /lib "
+sys_lib_search_path_spec="/home/tim/projects/timschwartz/osdev/cross/lib/gcc/x86_64-elf/10.2.0 /home/tim/projects/timschwartz/osdev/cross/lib/gcc /home/tim/projects/timschwartz/osdev/cross/x86_64-elf/lib "
 
 # Detected run-time system search path for libraries.
 sys_lib_dlsearch_path_spec="/lib /usr/lib /usr/lib/x86_64-linux-gnu/libfakeroot /usr/local/lib/i386-linux-gnu /lib/i386-linux-gnu /usr/lib/i386-linux-gnu /usr/local/lib/i686-linux-gnu /lib/i686-linux-gnu /usr/lib/i686-linux-gnu /usr/local/lib /usr/local/lib/x86_64-linux-gnu /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu /lib32 /usr/lib32 "
@@ -320,7 +320,7 @@ reload_cmds="\$LD\$reload_flag -o \$output\$reload_objs"
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$tool_oldlib"
 
 # A language specific compiler.
-CC="gcc"
+CC="/home/tim/projects/timschwartz/osdev/cross/bin/x86_64-elf-gcc"
 
 # Is the compiler the GNU compiler?
 with_gcc=yes
@@ -341,7 +341,7 @@ link_static_flag="-static"
 compiler_c_o="yes"
 
 # Whether or not to add -lc for building shared libraries.
-build_libtool_need_lc=no
+build_libtool_need_lc=yes
 
 # Whether or not to disallow shared libs when runtime libs are static.
 allow_libtool_libs_with_static_runtimes=no
