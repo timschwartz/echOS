@@ -8,10 +8,7 @@
 #include "../kernel/drivers/ssfn_fb.h"
 #include "../config.h"
 
-const uint32_t cyan = 0x0000FFFF;
-const uint32_t blue = 0x000070FF;
-const uint32_t white = 0xFFFFFFFF;
-const uint32_t black = 0x00000000;
+#include <elf.h>
 
 EFI_GUID ACPI2 = ACPI_20_TABLE_GUID;
 
@@ -46,26 +43,27 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
         goto hang;
     }
 
-    Print(L"%a\n\n", PACKAGE_STRING);
-    Print(L"EFI bootloader\n");
-
     system.rsdp2 = get_rsdp2(SystemTable);
     if(init_pmm(SystemTable, &system) != EFI_SUCCESS)
     {
         Print(L"Could not initialize physical memory map.\n");
         goto hang;
     }
-    size_t frame_count = 0;
-    for(size_t i = 0; i < system.physical_memory->block_count; i++)
-    {
-        frame_count += system.physical_memory->blocks[i]->frames_total;
-    }
-    size_t ram_size = (frame_count * 4096) / 1024 / 1024;
-    Print(L"Initialized physical memory map...%dMB\n", ram_size);
-    system.gdt = gdt_init(5, &efi_malloc);
 
+    uint8_t *kernel_raw;
+    size_t kernel_size;
+    if(efi_fread(L"\\EFI\\boot\\kernel", &kernel_size, &kernel_raw) != EFI_SUCCESS)
+    {
+        Print(L"Couldn't open \\EFI\\boot\\kernel\n");
+        goto hang;
+    }
+
+    Print(L"Kernel is %d bytes at 0x%x\n", kernel_size, kernel_raw);
+
+    Elf64_Ehdr *header = (Elf64_Ehdr *)kernel_raw;
+    Print(L"Section header is at 0x%x\n", header->e_shoff);
     uefi_call_wrapper((void *)SystemTable->BootServices->ExitBootServices, 2, ImageHandle, system.mmap_key);
-    kernel_start(system);
+    //kernel_start(system);
 
     Print(L"You shouldn't be here.\n");
 

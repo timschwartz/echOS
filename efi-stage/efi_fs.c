@@ -17,18 +17,27 @@ EFI_STATUS efi_fread (CHAR16 *filename, size_t *length, uint8_t **buffer)
     {
         EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *fs = NULL;
         result = uefi_call_wrapper(ST->BootServices->HandleProtocol, 3, handles[index], &sfspGuid, (void **)&fs);
-        if(EFI_ERROR(result)) continue;;
+        if(EFI_ERROR(result)) continue;
 
         EFI_FILE_PROTOCOL* root = NULL;
         result = uefi_call_wrapper(fs->OpenVolume, 2, fs, &root);
-        if(EFI_ERROR(result)) continue;;
+        if(EFI_ERROR(result))
+        {
+            continue;
+        }
 
         result = uefi_call_wrapper(root->Open, 5, root, &file, filename, EFI_FILE_MODE_READ, 
                                    EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
-        if(!EFI_ERROR(result)) break;
+        if(!EFI_ERROR(result))
+        {
+            break;
+        }
     }
 
-    if(EFI_ERROR(result)) return result;
+    if(EFI_ERROR(result))
+    {
+        return result;
+    }
 
     EFI_GUID FILE_INFO = EFI_FILE_INFO_ID;
     EFI_FILE_INFO *info;
