@@ -57,3 +57,31 @@ void frame_free(pmm *physical_memory, uint64_t address)
         }
     }
 }
+
+uint64_t frames_allocate(pmm *physical_memory, size_t count)
+{
+    /* temporary until paging is working */
+
+    for(size_t i = 0; i < physical_memory->block_count; i++)
+    {
+        if(physical_memory->blocks[i]->frames_free < count) continue;
+
+        uint64_t address = frame_allocate_from_block(physical_memory->blocks[i]);
+        for(size_t j = 1; j < count; j++) frame_allocate_from_block(physical_memory->blocks[i]);
+        return address;
+    }
+    return 0xFFFFFFFFFFFFFFFF;
+}
+
+size_t get_pmm_size(pmm *physical_memory)
+{
+    size_t length = physical_memory->block_count * sizeof(pm_block);
+  
+    for(size_t i = 0; i < physical_memory->block_count; i++)
+    {
+        pm_block *block = physical_memory->blocks[i];
+        size_t size = frame_map_size(block->frames_total) * 8;
+        length += size;
+    }
+    return length;
+}

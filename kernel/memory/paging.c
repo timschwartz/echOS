@@ -80,13 +80,16 @@ uint64_t get_cr(size_t index)
     return cr[index];
 }
 
-#if 0
 void set_cr3(uint64_t entry)
 {
     __asm__ __volatile__ (
+        "mov %%rax, %0\n\t"
+        "mov %%cr3, %%rax\n\t"
+        :
+        : "m" (entry)
+        : "memory"
     );
 }
-#endif
 
 void *mmap(void *start, size_t length, int prot, int flags, 
            int fd, off_t offset)

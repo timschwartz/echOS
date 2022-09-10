@@ -23,3 +23,7 @@ void frame_free_from_block(pm_block *block, uint64_t address);
 
 uint64_t frame_allocate(pmm *);
 void frame_free(pmm *, uint64_t address);
+
+uint64_t frames_allocate(pmm *, size_t);
+
+size_t get_pmm_size(pmm *);
