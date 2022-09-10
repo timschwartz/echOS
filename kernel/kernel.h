@@ -23,3 +23,5 @@ typedef struct
 } colonel_t;
 
 void kernel_start(colonel_t);
+
+extern colonel_t *system;

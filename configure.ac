@@ -1,11 +1,11 @@
 AC_PREREQ([2.69])
 AC_INIT([echOS], [0.0.2], [tim@metaverse.systems])
-AC_CONFIG_SRCDIR([efi-stage/efi_mmap.c])
+AC_CONFIG_SRCDIR([kernel/kernel.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIRS([m4])
 
 AM_INIT_AUTOMAKE
-LT_INIT([disable-static])
+LT_INIT
 AM_PROG_AS
 AC_PROG_CC
 
@@ -20,9 +20,6 @@ AC_SUBST(KERNEL_LIBS)
 LIBC_LIBS="-L${ac_abs_confdir}/lib/.libs -l:libc.a"
 AC_SUBST(LIBC_LIBS)
 
-EFI_STAGE_LIBS="-L${ac_abs_confdir}/lib/.libs -l:libefi_stage.a"
-AC_SUBST(EFI_STAGE_LIBS)
-
 AC_SUBST(CFLAGS, "$CFLAGS -I../include")
 AC_SUBST(CC)
 
@@ -31,7 +28,6 @@ ifdef(LD,
   AC_SUBST(LD, "ld"))
 
 AC_CONFIG_FILES([Makefile
-                 efi-stage/Makefile
                  lib/Makefile
                  lib/string/Makefile
                  lib/stdlib/Makefile
