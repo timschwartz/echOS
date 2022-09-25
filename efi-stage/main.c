@@ -43,31 +43,25 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
         goto hang;
     }
 
-    system.rsdp2 = get_rsdp2(SystemTable);
+    if((system.rsdp2 = get_rsdp2(SystemTable)) == NULL)
+    {
+        Print(L"Could not get pointer to RSDP2.\n");
+        goto hang;
+    }
+
     if(init_pmm(SystemTable, &system) != EFI_SUCCESS)
     {
         Print(L"Could not initialize physical memory map.\n");
         goto hang;
     }
 
-    uint8_t *kernel_raw;
-    size_t kernel_size;
-    if(efi_fread(L"\\EFI\\boot\\kernel", &kernel_size, &kernel_raw) != EFI_SUCCESS)
-    {
-        Print(L"Couldn't open \\EFI\\boot\\kernel\n");
-        goto hang;
-    }
-
-    Print(L"Kernel is %d bytes at 0x%x\n", kernel_size, kernel_raw);
-
-    Elf64_Ehdr *header = (Elf64_Ehdr *)kernel_raw;
-    Print(L"Section header is at 0x%x\n", header->e_shoff);
     uefi_call_wrapper((void *)SystemTable->BootServices->ExitBootServices, 2, ImageHandle, system.mmap_key);
-    //kernel_start(system);
+    kernel_start(system);
 
     Print(L"You shouldn't be here.\n");
 
 hang:
+    Print(L"Hanging up now.\n");
     for(;;)
     {
         __asm__ ("hlt");

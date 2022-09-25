@@ -7,12 +7,9 @@ colonel_t *system;
 
 const size_t gdt_entry_count = 5;
 
-void kernel_start(colonel_t sys)
+colonel_t *system_init(colonel_t sys)
 {
-    uint64_t pPage = frame_allocate(sys.physical_memory);
-
-    system = (colonel_t *)pPage;
-    pPage += sizeof(colonel_t);
+    colonel_t *system = (colonel_t *)frame_allocate(sys.physical_memory);
     system->fb.width = sys.fb.width;
     system->fb.height = sys.fb.height;
     system->fb.pixels_per_scanline = sys.fb.pixels_per_scanline;
@@ -28,14 +25,7 @@ void kernel_start(colonel_t sys)
         memcpy(system->fb.font, sys.fb.font, system->fb.font_size);
     }
 
-    ssfn_setup(system->fb);
-    ssfn_set_color(0xFFFFFFFF, 0);
-    ssfn_printf(sys.fb, "%s\n\n", PACKAGE_STRING);
-    ssfn_printf(sys.fb, "Starting kernel...\n");
-
-    pPage = frame_allocate(sys.physical_memory);
-    system->physical_memory = (pmm *)pPage;
-    pPage += sizeof(pmm);
+    system->physical_memory = (pmm *)frame_allocate(sys.physical_memory);
     system->physical_memory->block_count = sys.physical_memory->block_count;
 
     for(size_t i = 0; i < system->physical_memory->block_count; i++)
@@ -50,10 +40,22 @@ void kernel_start(colonel_t sys)
         memcpy(b2, b1, size);
         system->physical_memory->blocks[i] = b2;
     }
+    return system;
+}
 
-    ssfn_printf(sys.fb, "Copied physical memory map to 0x%x.\n", system->physical_memory);
+void kernel_start(colonel_t sys)
+{
+    /* Copy system data out of EFI memory */
+    system = system_init(sys);
 
-    pPage = frame_allocate(system->physical_memory);
+    ssfn_setup(system->fb);
+    ssfn_set_color(0xFFFFFFFF, 0);
+    ssfn_printf(system->fb, "%s\n\n", PACKAGE_STRING);
+    ssfn_printf(system->fb, "Copied physical memory map to 0x%x.\n", system->physical_memory);
+    ssfn_printf(system->fb, "Starting kernel...\n");
+
+    /* Start setup GDT */
+    uint64_t pPage = frame_allocate(system->physical_memory);
     system->gdt = (gdt_desc *)pPage;
     pPage += sizeof(gdt_desc);
     ssfn_printf(system->fb, "Created GDT descriptor at 0x%x.\n", system->gdt);

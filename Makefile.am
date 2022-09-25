@@ -1,2 +1,2 @@
-SUBDIRS = lib kernel efi-stage
+SUBDIRS = lib kernel
 ACLOCAL_AMFLAGS = -I m4
