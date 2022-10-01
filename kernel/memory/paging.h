@@ -44,9 +44,9 @@ typedef uint64_t page_directory_pointer_entry;
 typedef uint64_t page_map_level_4_entry;
 typedef page_map_level_4_entry *page_map_level_4;
 
-page_directory_entry init_pd_entry(pmm *);
-page_directory_pointer_entry init_pdp_entry(pmm *);
-page_map_level_4_entry init_pml4_entry(pmm *);
+page_directory_entry init_pd_entry(pmm *, uint64_t);
+page_directory_pointer_entry init_pdp_entry(pmm *, uint64_t);
+page_map_level_4_entry init_pml4_entry(pmm *, uint64_t);
 page_map_level_4 init_pml4(pmm *);
 
 page_directory_pointer_entry *get_pdp(page_map_level_4_entry entry);
@@ -57,3 +57,4 @@ uint64_t get_cr(size_t index);
 
 void *mmap(void *start, size_t length, int prot, int flags, 
            int fd, off_t offset);
+void map_page(page_map_level_4 pml4, uint64_t vaddr, uint64_t paddr, uint64_t flags);

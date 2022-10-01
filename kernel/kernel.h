@@ -1,6 +1,7 @@
 #pragma once
 
 #include "memory/physical.h"
+#include "memory/paging.h"
 #include "acpi/acpi.h"
 #include "gdt.h"
 #include "framebuffer.h"
@@ -14,6 +15,8 @@ typedef struct
 typedef struct
 {
     pmm *physical_memory;
+    page_map_level_4 kernel_pml4;
+
     gdt_desc *gdt;
     rsdp2_desc *rsdp2;
     cpu_info_t cpus;
