@@ -15,6 +15,16 @@ char *x32toa(uint32_t num, char *str)
     str[pos] = hex_chars[num & 0xF];
 }
 
+char *x64toa(uint64_t num, char *str)
+{
+    size_t pos = 0;
+    for(size_t i = 60; i > 0; i -= 4)
+    {
+        str[pos++] = hex_chars[(num >> i) & 0xF];
+    }
+    str[pos] = hex_chars[num & 0xF];
+}
+
 int vsprintf(char *str, const char *format, va_list arg)
 {
     char temp[32] = {0};
@@ -50,6 +60,32 @@ int vsprintf(char *str, const char *format, va_list arg)
                     {
                         str[written] = temp[counter];
                         written++;
+                    }
+                    break;
+                case 'l': // long
+                    i++;
+                    switch(format[i])
+                    {
+                        case 'l': // long long
+                            i++;
+                            switch(format[i])
+                            {
+                                case 'x':
+                                    i++;
+                                    uint64_t llx_value = va_arg(arg, uint64_t);
+                                    x64toa(llx_value, temp);
+                                    for(size_t counter = 0; counter < strlen(temp); counter++)
+                                    {
+                                        str[written] = temp[counter];
+                                        written++;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
                     }
                     break;
                 case 's':
