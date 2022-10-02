@@ -6,6 +6,7 @@ page_table_entry init_pt_entry(uint64_t paddr, uint64_t flags)
 {
     page_table_entry entry = (page_table_entry)(paddr & 0xFFFFFFFFFFFFF000);
     entry |= flags;
+    dump_pte(entry);
     return entry;
 }
 
@@ -20,6 +21,7 @@ page_directory_entry init_pd_entry(pmm *physical_memory, uint64_t flags)
     memset(pt, 0, frame_size);
     page_directory_entry entry = (page_directory_entry)pt;
     entry |= flags;
+    dump_pde(entry);
     return entry;
 }
 
@@ -34,6 +36,7 @@ page_directory_pointer_entry init_pdp_entry(pmm *physical_memory, uint64_t flags
     memset(pd, 0, frame_size);
     page_directory_pointer_entry entry = (page_directory_pointer_entry)pd;
     entry |= flags;
+    dump_pdpe(entry);
     return entry;
 }
 

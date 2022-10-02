@@ -13,6 +13,7 @@
 #define DIRTY_BIT 0x40
 #define PAGE_SIZE_BIT 0x80
 #define GLOBAL_PAGE_BIT 0x100
+#define NX_BIT 0x8000000000000000
 
 #define PROT_NONE       0
 #define PROT_READ       1
@@ -55,6 +56,8 @@ page_table_entry *get_pt(page_directory_entry entry);
 page_map_level_4 get_pml4(void);
 uint64_t get_cr(size_t index);
 
-void *mmap(void *start, size_t length, int prot, int flags, 
-           int fd, off_t offset);
 void map_page(page_map_level_4 pml4, uint64_t vaddr, uint64_t paddr, uint64_t flags);
+
+void dump_pte(page_table_entry entry);
+void dump_pde(page_directory_entry entry);
+void dump_pdpe(page_directory_pointer_entry entry);

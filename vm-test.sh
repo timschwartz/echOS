@@ -2,6 +2,9 @@
 
 source envvars.sh
 
+cd efi-stage
+make
+cd ..
 cp efi-stage/bootx64.efi ${LOOP_TARGET}/EFI/boot/
 cp efi-stage/*.sfn ${LOOP_TARGET}/EFI/boot/
 # cp kernel/kernel ${LOOP_TARGET}/EFI/boot
