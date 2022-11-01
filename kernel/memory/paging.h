@@ -55,8 +55,9 @@ page_directory_entry *get_pd(page_directory_pointer_entry entry);
 page_table_entry *get_pt(page_directory_entry entry);
 page_map_level_4 get_pml4(void);
 uint64_t get_cr(size_t index);
+void set_cr3(uint64_t entry);
 
-void map_page(page_map_level_4 pml4, uint64_t vaddr, uint64_t paddr, uint64_t flags);
+void map_page(pmm *physical_memory, page_map_level_4 pml4, uint64_t vaddr, uint64_t paddr, uint64_t flags);
 
 void dump_pte(page_table_entry entry);
 void dump_pde(page_directory_entry entry);

@@ -88,10 +88,10 @@ void kernel_start(colonel_t sys)
     ssfn_printf(system->fb, "Setup GDT at 0x%x.\n", system->gdt->base);
     /* End setup GDT */
 
-    system->kernel_pml4 = init_pml4(system->physical_memory);
-    map_page(system->kernel_pml4, 0x2000, 0x2000, PRESENT_BIT | READ_WRITE_BIT);
+    system->pml4 = init_pml4(system->physical_memory);
+    map_page(system->physical_memory, system->pml4, 0x2000, 0x2000, PRESENT_BIT | READ_WRITE_BIT);
 
-    ssfn_printf(system->fb, "Created kernel PML4 at 0x%x.\n", system->kernel_pml4);
+    ssfn_printf(system->fb, "Created kernel PML4 at 0x%x.\n", system->pml4);
 
     for(;;) __asm__ ("hlt");
 

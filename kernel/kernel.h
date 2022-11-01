@@ -15,7 +15,10 @@ typedef struct
 typedef struct
 {
     pmm *physical_memory;
-    page_map_level_4 kernel_pml4;
+    page_map_level_4 pml4;
+
+    void *heap;
+    size_t heap_size;
 
     gdt_desc *gdt;
     rsdp2_desc *rsdp2;

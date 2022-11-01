@@ -6,7 +6,6 @@ page_table_entry init_pt_entry(uint64_t paddr, uint64_t flags)
 {
     page_table_entry entry = (page_table_entry)(paddr & 0xFFFFFFFFFFFFF000);
     entry |= flags;
-    dump_pte(entry);
     return entry;
 }
 
@@ -21,7 +20,6 @@ page_directory_entry init_pd_entry(pmm *physical_memory, uint64_t flags)
     memset(pt, 0, frame_size);
     page_directory_entry entry = (page_directory_entry)pt;
     entry |= flags;
-    dump_pde(entry);
     return entry;
 }
 
@@ -98,7 +96,7 @@ void *mmap(void *start, size_t length, int prot, int flags,
     return (void *)0;
 }
 
-void map_page(page_map_level_4 pml4, uint64_t vaddr, uint64_t paddr, uint64_t flags)
+void map_page(pmm *physical_memory, page_map_level_4 pml4, uint64_t vaddr, uint64_t paddr, uint64_t flags)
 {
     uint16_t index1 = (vaddr >> 12) & 0x1FF;
     uint16_t index2 = (vaddr >> 21) & 0x1FF;
@@ -107,21 +105,21 @@ void map_page(page_map_level_4 pml4, uint64_t vaddr, uint64_t paddr, uint64_t fl
 
     if(pml4[index4] == 0)
     {
-        pml4[index4] = init_pml4_entry(system->physical_memory, flags);
+        pml4[index4] = init_pml4_entry(physical_memory, flags);
     }
 
     page_directory_pointer_entry *pdp = get_pdp(pml4[index4]);
 
     if(pdp[index3] == 0)
     {
-        pdp[index3] = init_pdp_entry(system->physical_memory, flags);
+        pdp[index3] = init_pdp_entry(physical_memory, flags);
     }
 
     page_directory_entry *pd = get_pd(pdp[index3]);
 
     if(pd[index2] == 0)
     {
-        pd[index2] = init_pd_entry(system->physical_memory, flags);
+        pd[index2] = init_pd_entry(physical_memory, flags);
     }
 
     page_table_entry *pt = get_pt(pd[index2]);

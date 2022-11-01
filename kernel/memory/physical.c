@@ -60,8 +60,6 @@ void frame_free(pmm *physical_memory, uint64_t address)
 
 uint64_t frames_allocate(pmm *physical_memory, size_t count)
 {
-    /* temporary until paging is working */
-
     for(size_t i = 0; i < physical_memory->block_count; i++)
     {
         if(physical_memory->blocks[i]->frames_free < count) continue;
