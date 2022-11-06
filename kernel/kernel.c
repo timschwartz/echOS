@@ -7,55 +7,20 @@ colonel_t *system;
 
 const size_t gdt_entry_count = 5;
 
-colonel_t *system_init(colonel_t sys)
+void kernel_start(colonel_t *sys)
 {
-    colonel_t *system = (colonel_t *)frame_allocate(sys.physical_memory);
-    system->fb.width = sys.fb.width;
-    system->fb.height = sys.fb.height;
-    system->fb.pixels_per_scanline = sys.fb.pixels_per_scanline;
-    system->fb.margin = sys.fb.margin;
-    system->fb.buffer = sys.fb.buffer;
-    system->fb.font_size = sys.fb.font_size;
-
-    {
-        size_t frames_needed = system->fb.font_size / frame_size;
-        if(frames_needed * frame_size < system->fb.font_size) frames_needed++;
-        system->fb.font = (uint8_t *)frames_allocate(sys.physical_memory, frames_needed);
-        memset(system->fb.font, 0, frames_needed * frame_size);
-        memcpy(system->fb.font, sys.fb.font, system->fb.font_size);
-    }
-
-    system->physical_memory = (pmm *)frame_allocate(sys.physical_memory);
-    system->physical_memory->block_count = sys.physical_memory->block_count;
-
-    for(size_t i = 0; i < system->physical_memory->block_count; i++)
-    {
-        pm_block *b1 = sys.physical_memory->blocks[i];
-        size_t size = frame_map_size(b1->frames_total) * 8;
-
-        size_t frames_needed = size / frame_size;
-        if(frames_needed * frame_size < size) frames_needed++;
-        pm_block *b2 = (pm_block *)frames_allocate(sys.physical_memory, frames_needed);
-        memset(b2, 0, frames_needed * frame_size);
-        memcpy(b2, b1, size);
-        system->physical_memory->blocks[i] = b2;
-    }
-    return system;
-}
-
-void kernel_start(colonel_t sys)
-{
-    /* Copy system data out of EFI memory */
-    system = system_init(sys);
+    system = sys;
 
     ssfn_setup(system->fb);
     ssfn_set_color(0xFFFFFFFF, 0);
     ssfn_printf(system->fb, "%s\n\n", PACKAGE_STRING);
     ssfn_printf(system->fb, "Copied physical memory map to 0x%x.\n", system->physical_memory);
+    ssfn_printf(system->fb, "kernel_start() is at 0x%llx.\n", kernel_start);
     ssfn_printf(system->fb, "Starting kernel...\n");
 
     /* Start setup GDT */
     uint64_t pPage = frame_allocate(system->physical_memory);
+    ssfn_printf(system->fb, "Allocated frame at 0x%llx.\n", pPage);
     system->gdt = (gdt_desc *)pPage;
     pPage += sizeof(gdt_desc);
     ssfn_printf(system->fb, "Created GDT descriptor at 0x%x.\n", system->gdt);
@@ -89,7 +54,7 @@ void kernel_start(colonel_t sys)
     /* End setup GDT */
 
     system->pml4 = init_pml4(system->physical_memory);
-    map_page(system->physical_memory, system->pml4, 0x2000, 0x2000, PRESENT_BIT | READ_WRITE_BIT);
+//    map_page(system->physical_memory, system->pml4, 0x2000, 0x2000, PRESENT_BIT | READ_WRITE_BIT);
 
     ssfn_printf(system->fb, "Created kernel PML4 at 0x%x.\n", system->pml4);
 

@@ -2,7 +2,7 @@
 #include "efi_mmap.h"
 #include "efi_malloc.h"
 
-EFI_STATUS init_pmm(EFI_SYSTEM_TABLE *SystemTable, colonel_t *system)
+EFI_STATUS init_pmm(EFI_SYSTEM_TABLE *SystemTable, pmm **pm, uint64_t *mmap_key)
 {
     efi_mmap_t mmap = { 0, 0, 0, 0, 0 };
     if(getEFIMemoryMap(SystemTable, &mmap) != EFI_SUCCESS)
@@ -22,6 +22,8 @@ EFI_STATUS init_pmm(EFI_SYSTEM_TABLE *SystemTable, colonel_t *system)
         physical_memory->blocks[i] = block;
         setupPhysicalMemoryBlock(mmap, block, i);
 
+        // Print(L"Creating memory block %d at 0x%llx. %d frames total. %d frames free.\n", i, block, block->frames_total, block->frames_free);
+
         uint64_t map_size = frame_map_size(block->frames_total);
         if(map_size < 1) map_size++;
 
@@ -29,7 +31,7 @@ EFI_STATUS init_pmm(EFI_SYSTEM_TABLE *SystemTable, colonel_t *system)
         for(size_t j = 0; j < map_size; j++) block->map[j] = 0;
     }
 
-    system->physical_memory = physical_memory;
-    system->mmap_key = mmap.key;
+    *pm = physical_memory;
+    *mmap_key = mmap.key;
     return EFI_SUCCESS;
 }
