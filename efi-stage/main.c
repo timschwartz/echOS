@@ -65,8 +65,6 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
         goto hang;
     }
 
-    Print(L"Copied font (%d bytes) to EFI memory: 0x%llx.\n", font_size, efi_font_file);
-
     uint8_t *efi_kernel_file;
     size_t kernel_size;
     if(efi_fread(L"\\EFI\\boot\\libkernel.so", &kernel_size, &efi_kernel_file) != EFI_SUCCESS)
@@ -74,8 +72,6 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
         Print(L"Couldn't open \\EFI\\boot\\libkernel.so\n");
         goto hang;
     }
-
-    Print(L"Copied kernel (%d bytes) to EFI memory: 0x%llx.\n", kernel_size, efi_kernel_file);
 
     colonel_t *system = efi_malloc(sizeof(colonel_t));
 
