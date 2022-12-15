@@ -10,7 +10,6 @@ typedef struct __attribute__((__packed__))
 } gdt_desc;
 
 gdt_desc gdt_get();
-void gdt_set(gdt_desc *);
 gdt_entry gdt_entry_create(uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
 void gdt_entry_add(gdt_desc *, uint8_t index, gdt_entry);
-extern void gdt_flush();
+extern void gdt_flush(gdt_desc *);

@@ -14,24 +14,6 @@ gdt_desc gdt_get()
     return gdt;
 }
 
-void gdt_set(gdt_desc *gdt)
-{
-    __asm__ __volatile__ (
-    "cli\n"
-    "mov %0, %%rdi\n"
-    "lgdt (%%rdi)\n"
-    "mov $0x10, %%ax\n"
-    "mov %%ax, %%ds\n"
-    "mov %%ax, %%es\n"
-    "mov %%ax, %%ss\n"
-    :
-    : "m" (gdt)
-    : "memory"
-    );
-
-    gdt_flush();
-}
-
 gdt_entry gdt_entry_create(uint32_t base, uint32_t limit, uint8_t access, uint8_t flags)
 {
     gdt_entry entry;
