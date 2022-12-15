@@ -32,20 +32,6 @@ void gdt_set(gdt_desc *gdt)
     gdt_flush();
 }
 
-gdt_desc *gdt_init(size_t count, void *(*malloc)(uint64_t))
-{
-    size_t length = count * 8;
-
-    gdt_desc *gdt = (gdt_desc *)malloc(sizeof(gdt_desc));
-    gdt->limit = length - 1;
-
-    gdt->base = (uint64_t)malloc(length);
-
-    memset((uint64_t *)(gdt->base), 0, length);
-
-    return gdt;
-}
-
 gdt_entry gdt_entry_create(uint32_t base, uint32_t limit, uint8_t access, uint8_t flags)
 {
     gdt_entry entry;
