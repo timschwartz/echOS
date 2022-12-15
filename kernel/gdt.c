@@ -14,14 +14,22 @@ gdt_desc gdt_get()
     return gdt;
 }
 
-void gdt_set(gdt_desc gdt)
+void gdt_set(gdt_desc *gdt)
 {
     __asm__ __volatile__ (
-    "lgdt %0"
+    "cli\n"
+    "mov %0, %%rdi\n"
+    "lgdt (%%rdi)\n"
+    "mov $0x10, %%ax\n"
+    "mov %%ax, %%ds\n"
+    "mov %%ax, %%es\n"
+    "mov %%ax, %%ss\n"
     :
     : "m" (gdt)
     : "memory"
     );
+
+    gdt_flush();
 }
 
 gdt_desc *gdt_init(size_t count, void *(*malloc)(uint64_t))

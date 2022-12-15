@@ -4,11 +4,32 @@
 #include "efi_video.h"
 #include "efi_fs.h"
 #include "efi_malloc.h"
+#include "efi_mmap.h"
 #include "../kernel/kernel.h"
 #include "../kernel/drivers/ssfn_fb.h"
 #include "../config.h"
 
-#include <elf.h>
+void display_error(EFI_STATUS result)
+{
+    switch(result)
+    {
+        case EFI_SUCCESS:
+            Print(L"EFI_SUCCESS\n");
+            break;
+        case EFI_INVALID_PARAMETER:
+            Print(L"EFI_INVALID_PARAMETER\n");
+            break;
+        case EFI_UNSUPPORTED:
+            Print(L"EFI_UNSUPPORTED\n");
+            break;
+        case EFI_BUFFER_TOO_SMALL:
+            Print(L"EFI_BUFFER_TOO_SMALL\n");
+            break;
+        default:
+           Print(L"Unknown result = 0x%x\n", result);
+           break;
+    }
+}
 
 EFI_GUID ACPI2 = ACPI_20_TABLE_GUID;
 
@@ -35,33 +56,50 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut);
     SystemTable->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
 
-    colonel_t system;
-    system.fb = framebuffer_init(10);
-    if(efi_fread(L"\\EFI\\boot\\unifont.sfn", &system.fb.font_size, &system.fb.font) != EFI_SUCCESS)
-    {
+    /* Load font into EFI memory */
+    uint8_t *efi_font_file;
+    size_t font_size;
+    if(efi_fread(L"\\EFI\\boot\\unifont.sfn", &font_size, &efi_font_file) != EFI_SUCCESS)
+    {   
         Print(L"Couldn't open \\EFI\\boot\\unifont.sfn\n");
         goto hang;
     }
 
-    if((system.rsdp2 = get_rsdp2(SystemTable)) == NULL)
+    Print(L"Copied font (%d bytes) to EFI memory: 0x%llx.\n", font_size, efi_font_file);
+
+    uint8_t *efi_kernel_file;
+    size_t kernel_size;
+    if(efi_fread(L"\\EFI\\boot\\libkernel.so", &kernel_size, &efi_kernel_file) != EFI_SUCCESS)
+    {   
+        Print(L"Couldn't open \\EFI\\boot\\libkernel.so\n");
+        goto hang;
+    }
+
+    Print(L"Copied kernel (%d bytes) to EFI memory: 0x%llx.\n", kernel_size, efi_kernel_file);
+
+    colonel_t *system = efi_malloc(sizeof(colonel_t));
+
+    if((system->rsdp2 = get_rsdp2(SystemTable)) == NULL)
     {
         Print(L"Could not get pointer to RSDP2.\n");
         goto hang;
     }
 
-    if(init_pmm(SystemTable, &system) != EFI_SUCCESS)
+    /* Initialize physical memory manager in EFI memory */
+    uint64_t mmap_key;
+    if(init_pmm(ImageHandle, SystemTable, &(system->physical_memory)) != EFI_SUCCESS)
     {
         Print(L"Could not initialize physical memory map.\n");
         goto hang;
     }
 
-    uefi_call_wrapper((void *)SystemTable->BootServices->ExitBootServices, 2, ImageHandle, system.mmap_key);
+    system->fb = framebuffer_init(10);
+    system->fb.font_size = font_size;
+    system->fb.font = efi_font_file;
+
     kernel_start(system);
-
-    Print(L"You shouldn't be here.\n");
-
 hang:
-    Print(L"Hanging up now.\n");
+    Print(L"Hanging now.\n");
     for(;;)
     {
         __asm__ ("hlt");

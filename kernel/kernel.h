@@ -28,6 +28,6 @@ typedef struct
     uint64_t mmap_key;
 } colonel_t;
 
-void kernel_start(colonel_t);
+void kernel_start(colonel_t *);
 
 extern colonel_t *system;
