@@ -64,15 +64,15 @@ uint64_t frames_allocate(pmm *physical_memory, size_t count)
 {
     for(size_t i = 0; i < physical_memory->block_count; i++)
     {
-        if(i > 0) Print(L"Checking block %d. %d free frames\n", i, physical_memory->blocks[i]->frames_free);
+//        if(i > 0) Print(L"Checking block %d. %d free frames\n", i, physical_memory->blocks[i]->frames_free);
         if(physical_memory->blocks[i]->frames_free < count) continue;
 
-        if(i > 0) Print(L"Choosing block %d\n", i);
+//        if(i > 0) Print(L"Choosing block %d\n", i);
         uint64_t address = frame_allocate_from_block(physical_memory->blocks[i]);
         for(size_t j = 1; j < count; j++) frame_allocate_from_block(physical_memory->blocks[i]);
         return address;
     }
-    Print(L"Couldn't find %d free frames\n", count);
+//    Print(L"Couldn't find %d free frames\n", count);
     return 0xFFFFFFFFFFFFFFFF;
 }
 

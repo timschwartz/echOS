@@ -1,6 +1,6 @@
 #include "efi_mmap.h"
 
-EFI_STATUS getEFIMemoryMap(EFI_SYSTEM_TABLE *SystemTable, efi_mmap_t *mmap)
+EFI_STATUS getEFIMemoryMap(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable, efi_mmap_t *mmap)
 {
     EFI_STATUS result = -1;
 
@@ -17,6 +17,9 @@ EFI_STATUS getEFIMemoryMap(EFI_SYSTEM_TABLE *SystemTable, efi_mmap_t *mmap)
         }
         else return result;
     }
+
+//    result = uefi_call_wrapper((void *)SystemTable->BootServices->ExitBootServices, 2, ImageHandle, mmap->key);
+//    if(EFI_SUCCESS != result) Print(L"getEFIMemoryMap(): ExitBootServices() failed.\n");
 
     mmap->start = (uint64_t)memoryMap;
     mmap->end = mmap->start + mmap->size;

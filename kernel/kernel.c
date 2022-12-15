@@ -19,15 +19,11 @@ void kernel_start(colonel_t *sys)
     ssfn_printf(system->fb, "Starting kernel...\n");
 
     /* Start setup GDT */
-    uint64_t pPage = frame_allocate(system->physical_memory);
-    ssfn_printf(system->fb, "Allocated frame at 0x%llx.\n", pPage);
-    system->gdt = (gdt_desc *)pPage;
-    pPage += sizeof(gdt_desc);
+    system->gdt = (gdt_desc *)frame_allocate(system->physical_memory);
     ssfn_printf(system->fb, "Created GDT descriptor at 0x%x.\n", system->gdt);
 
     system->gdt->limit = gdt_entry_count * sizeof(gdt_entry) - 1;
-    system->gdt->base = pPage;
-    pPage += system->gdt->limit + 1;
+    system->gdt->base = frame_allocate(system->physical_memory);
 
     // Null segment
     gdt_entry e = gdt_entry_create(0, 0, 0, 0);
@@ -49,14 +45,16 @@ void kernel_start(colonel_t *sys)
     e = gdt_entry_create(0, 0xFFFFF, 0xF2, 0xC);
     gdt_entry_add(system->gdt, 4, e);
 
-    gdt_set(*(system->gdt));
+    ssfn_printf(system->fb, "Finished creating GDT entries.\n");
+
+    gdt_set(system->gdt);
     ssfn_printf(system->fb, "Setup GDT at 0x%x.\n", system->gdt->base);
     /* End setup GDT */
 
     system->pml4 = init_pml4(system->physical_memory);
 //    map_page(system->physical_memory, system->pml4, 0x2000, 0x2000, PRESENT_BIT | READ_WRITE_BIT);
 
-    ssfn_printf(system->fb, "Created kernel PML4 at 0x%x.\n", system->pml4);
+//    ssfn_printf(system->fb, "Created kernel PML4 at 0x%x.\n", system->pml4);
 
     for(;;) __asm__ ("hlt");
 

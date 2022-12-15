@@ -71,3 +71,4 @@ bootx64.efi
 *.a
 *.la
 *.lo
+kernel/.libs
