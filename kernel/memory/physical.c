@@ -10,10 +10,10 @@ uint64_t frame_allocate_from_block(pm_block *block)
 
         for(uint8_t bit = 0; bit < 64; bit++)
         {
-            if(block->map[entry] & (1 << bit)) continue;
+            if(block->map[entry] & (1ULL << bit)) continue;
 
-            block->map[entry] |= (1 << bit); 
-            uint64_t frame_offset = (entry * 8) + bit;
+            block->map[entry] |= (1ULL << bit); 
+            uint64_t frame_offset = (entry * 64) + bit;
             uint64_t address = block->address + (frame_offset * frame_size);
             block->frames_free--;
             return address;
@@ -29,8 +29,8 @@ void frame_free_from_block(pm_block *block, uint64_t address)
     uint64_t entry = frame_offset / 64;
     uint64_t bit = frame_offset % 64;
 
-    if(block->map[entry] & (1 << bit)) block->frames_free++;
-    block->map[entry] &= ~(1 << bit);
+    if(block->map[entry] & (1ULL << bit)) block->frames_free++;
+    block->map[entry] &= ~(1ULL << bit);
 }
 
 uint64_t frame_allocate(pmm *physical_memory)
