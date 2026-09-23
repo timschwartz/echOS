@@ -10,16 +10,29 @@ EFI_STATUS getEFIMemoryMap(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
     while(EFI_SUCCESS != (result = uefi_call_wrapper((void *)SystemTable->BootServices->GetMemoryMap, 5, &(mmap->size),
                                                    memoryMap, &(mmap->key), &(mmap->descriptorSize), &descriptorVersion)))
     {
-        if(result == EFI_BUFFER_TOO_SMALL)
+        if(result != EFI_BUFFER_TOO_SMALL) break;
+
+        if(memoryMap != NULL)
         {
-            mmap->size += 2 * mmap->descriptorSize;
-            uefi_call_wrapper((void *)SystemTable->BootServices->AllocatePool, 3, EfiLoaderData, mmap->size, (void **)&memoryMap);
+            uefi_call_wrapper((void *)SystemTable->BootServices->FreePool, 1, memoryMap);
+            memoryMap = NULL;
         }
-        else return result;
+
+        mmap->size += 2 * mmap->descriptorSize;
+        result = uefi_call_wrapper((void *)SystemTable->BootServices->AllocatePool, 3, EfiLoaderData, mmap->size, (void **)&memoryMap);
+        if(result != EFI_SUCCESS)
+        {
+            memoryMap = NULL;
+            break;
+        }
     }
 
-//    result = uefi_call_wrapper((void *)SystemTable->BootServices->ExitBootServices, 2, ImageHandle, mmap->key);
-//    if(EFI_SUCCESS != result) Print(L"getEFIMemoryMap(): ExitBootServices() failed.\n");
+    if(result != EFI_SUCCESS)
+    {
+        if(memoryMap != NULL) uefi_call_wrapper((void *)SystemTable->BootServices->FreePool, 1, memoryMap);
+        mmap->start = mmap->end = 0;
+        return result;
+    }
 
     mmap->start = (uint64_t)memoryMap;
     mmap->end = mmap->start + mmap->size;
