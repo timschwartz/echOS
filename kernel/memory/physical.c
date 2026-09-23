@@ -52,7 +52,7 @@ void frame_free(pmm *physical_memory, uint64_t address)
                        (physical_memory->blocks[i]->frames_total * frame_size);
 
         if((address >= physical_memory->blocks[i]->address) &&
-           (address <= end))
+           (address < end))
         {
             frame_free_from_block(physical_memory->blocks[i], address);
             return;

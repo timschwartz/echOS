@@ -19,11 +19,25 @@ void kernel_start(colonel_t *sys)
     ssfn_printf(system->fb, "Starting kernel...\n");
 
     /* Start setup GDT */
-    system->gdt = (gdt_desc *)frame_allocate(system->physical_memory);
+    gdt_desc *gdt = (gdt_desc *)frame_allocate(system->physical_memory);
+    if(gdt == 0xFFFFFFFFFFFFFFFF)
+    {
+        ssfn_printf(system->fb, "Failed to allocate GDT descriptor.\n");
+        for(;;) __asm__ ("hlt");
+    }
+
+    system->gdt = gdt;
     ssfn_printf(system->fb, "Created GDT descriptor at 0x%x.\n", system->gdt);
 
     system->gdt->limit = gdt_entry_count * sizeof(gdt_entry) - 1;
-    system->gdt->base = frame_allocate(system->physical_memory);
+
+    uint64_t base = frame_allocate(system->physical_memory);
+    if(base == 0xFFFFFFFFFFFFFFFF)
+    {
+        ssfn_printf(system->fb, "Failed to allocate GDT base.\n");
+        for(;;) __asm__ ("hlt");
+    }
+    system->gdt->base = base;
 
     // Null segment
     gdt_entry e = gdt_entry_create(0, 0, 0, 0);
