@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #define frame_size 4096
-#define frame_map_size(frame_count) ((frame_count + 63) / 64)
+#define frame_map_size(frame_count) (((frame_count) + 63) / 64)
 
 typedef enum
 {

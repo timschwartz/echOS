@@ -111,6 +111,15 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
         mmap.size = map_capacity;
         result = uefi_call_wrapper(SystemTable->BootServices->GetMemoryMap, 5, &(mmap.size), map_buffer,
                                    &(mmap.key), &(mmap.descriptorSize), &descriptor_version);
+        /* EFI_BUFFER_TOO_SMALL means the map outgrew the slack reserved above.
+           Boot Services haven't exited, so Print should still work, though a
+           failed ExitBootServices may already have stopped some firmware
+           drivers. Either way this ends in a hang. */
+        if(result != EFI_SUCCESS)
+        {
+            Print(L"GetMemoryMap failed: 0x%lx\n", result);
+            goto hang;
+        }
 
         result = uefi_call_wrapper(SystemTable->BootServices->ExitBootServices, 2, ImageHandle, mmap.key);
         if(result == EFI_SUCCESS) break;

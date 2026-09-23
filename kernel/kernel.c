@@ -53,7 +53,7 @@ void kernel_start(colonel_t *sys)
 
     /* Start setup GDT */
     gdt_desc *gdt = (gdt_desc *)frame_allocate(system->physical_memory);
-    if(gdt == 0xFFFFFFFFFFFFFFFF)
+    if((uint64_t)gdt == 0xFFFFFFFFFFFFFFFF)
     {
         ssfn_printf(system->fb, "Failed to allocate GDT descriptor.\n");
         for(;;) __asm__ ("hlt");

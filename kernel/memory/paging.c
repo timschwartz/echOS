@@ -61,24 +61,22 @@ page_map_level_4 init_pml4(pmm *physical_memory)
     return alloc_table(physical_memory);
 }
 
+/* Read control register CR<index>. Valid indexes are 0, 2, 3, 4 and 8;
+   CR1 and the others don't exist and reading them raises #UD, so any other
+   index returns 0xFFFFFFFFFFFFFFFF. volatile because CR2 and CR3 change
+   underneath the compiler. */
 uint64_t get_cr(size_t index)
 {
-    uint64_t cr[5];
-    __asm__ __volatile__ (
-        "mov %%cr0, %%rax\n\t"
-        "mov %%eax, %0\n\t"
-        "mov %%cr2, %%rax\n\t"
-        "mov %%eax, %1\n\t"
-        "mov %%cr3, %%rax\n\t"
-        "mov %%eax, %2\n\t"
-        "mov %%cr4, %%rax\n\t"
-        "mov %%eax, %3\n\t"
-    : "=m" (cr[0]), "=m" (cr[2]), "=m" (cr[3]), "=m" (cr[4])
-    : /* no input */
-    : "%rax"
-    );
-
-    return cr[index];
+    uint64_t value;
+    switch(index)
+    {
+        case 0: __asm__ volatile ("mov %%cr0, %0" : "=r" (value)); return value;
+        case 2: __asm__ volatile ("mov %%cr2, %0" : "=r" (value)); return value;
+        case 3: __asm__ volatile ("mov %%cr3, %0" : "=r" (value)); return value;
+        case 4: __asm__ volatile ("mov %%cr4, %0" : "=r" (value)); return value;
+        case 8: __asm__ volatile ("mov %%cr8, %0" : "=r" (value)); return value;
+        default: return 0xFFFFFFFFFFFFFFFF;
+    }
 }
 
 void set_cr3(uint64_t entry)

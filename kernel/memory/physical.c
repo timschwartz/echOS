@@ -1,6 +1,5 @@
 #include "physical.h"
-#include <efi.h>
-#include <efilib.h>
+#include <stddef.h>
 
 uint64_t frame_allocate_from_block(pm_block *block)
 {
@@ -41,7 +40,8 @@ uint64_t frame_allocate(pmm *physical_memory)
     {
         if(!physical_memory->blocks[i]->frames_free) continue;
 
-        return frame_allocate_from_block(physical_memory->blocks[i]);
+        uint64_t address = frame_allocate_from_block(physical_memory->blocks[i]);
+        if(address != 0xFFFFFFFFFFFFFFFF) return address;
     }
     return 0xFFFFFFFFFFFFFFFF;
 }
@@ -62,19 +62,51 @@ void frame_free(pmm *physical_memory, uint64_t address)
     }
 }
 
+static int frame_is_used(pm_block *block, uint64_t frame)
+{
+    return (block->map[frame / 64] >> (frame % 64)) & 1;
+}
+
+/* Find and claim count contiguous free frames in one block. */
+static uint64_t frames_allocate_from_block(pm_block *block, size_t count)
+{
+    uint64_t run_start = 0;
+    size_t run_length = 0;
+
+    for(uint64_t frame = 0; frame < block->frames_total; frame++)
+    {
+        if(frame_is_used(block, frame))
+        {
+            run_length = 0;
+            continue;
+        }
+
+        if(run_length == 0) run_start = frame;
+        if(++run_length < count) continue;
+
+        for(uint64_t f = run_start; f < run_start + count; f++)
+        {
+            block->map[f / 64] |= 1ULL << (f % 64);
+        }
+        block->frames_free -= count;
+        return block->address + run_start * frame_size;
+    }
+    return 0xFFFFFFFFFFFFFFFF;
+}
+
+/* Allocate count physically contiguous frames and return the first one. */
 uint64_t frames_allocate(pmm *physical_memory, size_t count)
 {
+    if(count == 0) return 0xFFFFFFFFFFFFFFFF;
+
     for(size_t i = 0; i < physical_memory->block_count; i++)
     {
-//        if(i > 0) Print(L"Checking block %d. %d free frames\n", i, physical_memory->blocks[i]->frames_free);
-        if(physical_memory->blocks[i]->frames_free < count) continue;
+        pm_block *block = physical_memory->blocks[i];
+        if(block->map == NULL || block->frames_free < count) continue;
 
-//        if(i > 0) Print(L"Choosing block %d\n", i);
-        uint64_t address = frame_allocate_from_block(physical_memory->blocks[i]);
-        for(size_t j = 1; j < count; j++) frame_allocate_from_block(physical_memory->blocks[i]);
-        return address;
+        uint64_t address = frames_allocate_from_block(block, count);
+        if(address != 0xFFFFFFFFFFFFFFFF) return address;
     }
-//    Print(L"Couldn't find %d free frames\n", count);
     return 0xFFFFFFFFFFFFFFFF;
 }
 
