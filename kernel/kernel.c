@@ -60,13 +60,12 @@ void kernel_start(colonel_t *sys)
     gdt_entry_add(system->gdt, 4, e);
 
     gdt_flush(system->gdt);
-__asm__ ("hlt");
 
     ssfn_printf(system->fb, "Setup GDT at 0x%x, limit: 0x%x.\n", system->gdt->base, system->gdt->limit);
     /* End setup GDT */
 
     system->pml4 = init_pml4(system->physical_memory);
-//    map_page(system->physical_memory, system->pml4, 0x2000, 0x2000, PRESENT_BIT | READ_WRITE_BIT);
+    map_page(system->physical_memory, system->pml4, 0x2000, 0x2000, PRESENT_BIT | READ_WRITE_BIT);
 
     ssfn_printf(system->fb, "Created kernel PML4 at 0x%x.\n", system->pml4);
 
