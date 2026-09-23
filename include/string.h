@@ -19,11 +19,11 @@ int memcmp(const void *str1, const void *str2, size_t length);
   */
 void *memcpy(void *dest, const void *src, size_t length);
 
-/** Set all 'n' elements of 's' to value 'c'.
+/** Set all 'n' bytes of 's' to value 'c'.
   *
-  *   \param s pointer to elements.
-  *   \param c value to set elements.
-  *   \param n number of elements to write.
+  *   \param s pointer to bytes.
+  *   \param c value to set bytes.
+  *   \param n number of bytes to write.
   */
 void *memset(void *s, int c, size_t n);
 

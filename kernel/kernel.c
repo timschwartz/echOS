@@ -46,6 +46,8 @@ void kernel_start(colonel_t *sys)
     gdt_entry_add(system->gdt, 4, e);
 
     gdt_flush(system->gdt);
+__asm__ ("hlt");
+
     ssfn_printf(system->fb, "Setup GDT at 0x%x, limit: 0x%x.\n", system->gdt->base, system->gdt->limit);
     /* End setup GDT */
 

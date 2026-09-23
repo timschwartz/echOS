@@ -56,18 +56,17 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut);
     SystemTable->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
 
-    /* Load font into EFI memory */
-    uint8_t *efi_font_file;
+    uint8_t *font_file;
     size_t font_size;
-    if(efi_fread(L"\\EFI\\boot\\unifont.sfn", &font_size, &efi_font_file) != EFI_SUCCESS)
+    if(efi_fread(L"\\EFI\\boot\\unifont.sfn", &font_size, &font_file) != EFI_SUCCESS)
     {   
         Print(L"Couldn't open \\EFI\\boot\\unifont.sfn\n");
         goto hang;
     }
 
-    uint8_t *efi_kernel_file;
+    uint8_t *kernel_file;
     size_t kernel_size;
-    if(efi_fread(L"\\EFI\\boot\\libkernel.so", &kernel_size, &efi_kernel_file) != EFI_SUCCESS)
+    if(efi_fread(L"\\EFI\\boot\\libkernel.so", &kernel_size, &kernel_file) != EFI_SUCCESS)
     {   
         Print(L"Couldn't open \\EFI\\boot\\libkernel.so\n");
         goto hang;
@@ -91,7 +90,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
     system->fb = framebuffer_init(10);
     system->fb.font_size = font_size;
-    system->fb.font = efi_font_file;
+    system->fb.font = font_file;
 
     kernel_start(system);
 hang:
