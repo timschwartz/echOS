@@ -38,15 +38,15 @@ rsdp2_desc *get_rsdp2(EFI_SYSTEM_TABLE *SystemTable)
     for(uint16_t counter = 0; counter < SystemTable->NumberOfTableEntries; counter++)
     {
         EFI_CONFIGURATION_TABLE table = SystemTable->ConfigurationTable[counter];
-        if(CompareGuid(&ACPI2, &table.VendorGuid)) continue;
+        if(!CompareGuid(&ACPI2, &table.VendorGuid)) continue;
 
         return (rsdp2_desc *)table.VendorTable;
     }
     return NULL;
 }
 
+/* Called by gnu-efi's _entry with the SysV ABI, so no EFIAPI here. */
 EFI_STATUS
-EFIAPI
 efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
     InitializeLib(ImageHandle, SystemTable);
@@ -73,6 +73,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     }
 
     colonel_t *system = efi_malloc(sizeof(colonel_t));
+    if(system == NULL) goto hang;
 
     if((system->rsdp2 = get_rsdp2(SystemTable)) == NULL)
     {
@@ -80,25 +81,65 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
         goto hang;
     }
 
-    /* Initialize physical memory manager in EFI memory */
-    uint64_t mmap_key;
-    if(init_pmm(ImageHandle, SystemTable, &(system->physical_memory)) != EFI_SUCCESS)
-    {
-        Print(L"Could not initialize physical memory map.\n");
-        goto hang;
-    }
-
     system->fb = framebuffer_init(10);
     system->fb.font_size = font_size;
     system->fb.font = font_file;
 
-    kernel_start(system);
-hang:
-    Print(L"Hanging now.\n");
+    /* Allocate the PMM storage. It's sized from a provisional memory map and
+       filled in from the final one after ExitBootServices. */
+    pmm_storage pmm_store;
+    if(reserve_pmm(ImageHandle, SystemTable, &pmm_store) != EFI_SUCCESS)
+    {
+        Print(L"Could not reserve physical memory manager.\n");
+        goto hang;
+    }
+
+    /* Allocate the final memory map buffer last, with slack for this
+       allocation and for ExitBootServices retries. */
+    efi_mmap_t mmap = { 0, 0, 0, 0, 0 };
+    UINT32 descriptor_version;
+    uefi_call_wrapper(SystemTable->BootServices->GetMemoryMap, 5, &(mmap.size), NULL,
+                      &(mmap.key), &(mmap.descriptorSize), &descriptor_version);
+    const uint64_t map_capacity = mmap.size + 8 * mmap.descriptorSize;
+    EFI_MEMORY_DESCRIPTOR *map_buffer = efi_malloc(map_capacity);
+    if(map_buffer == NULL) goto hang;
+
+    /* No Print or allocation from here on: either would change the map and
+       invalidate its key. */
     for(;;)
     {
-        __asm__ ("hlt");
+        mmap.size = map_capacity;
+        result = uefi_call_wrapper(SystemTable->BootServices->GetMemoryMap, 5, &(mmap.size), map_buffer,
+                                   &(mmap.key), &(mmap.descriptorSize), &descriptor_version);
+
+        result = uefi_call_wrapper(SystemTable->BootServices->ExitBootServices, 2, ImageHandle, mmap.key);
+        if(result == EFI_SUCCESS) break;
+        if(result != EFI_INVALID_PARAMETER) goto halt;   // anything else isn't a stale key
+    }
+
+    /* Boot Services are gone. The firmware's IDT is still loaded, so keep
+       interrupts off until the kernel installs its own. */
+    __asm__ volatile ("cli");
+
+    mmap.start = (uint64_t)map_buffer;
+    mmap.end = mmap.start + mmap.size;
+    system->mmap_key = mmap.key;
+
+    build_pmm(&pmm_store, mmap);
+    system->physical_memory = pmm_store.physical_memory;
+
+    kernel_start(system);
+    goto halt;
+
+hang:
+    Print(L"Hanging now.\n");
+halt:
+    /* Failures after ExitBootServices come here directly, since Print no longer works. */
+    for(;;)
+    {
+        __asm__ ("cli; hlt");
     }
 
     return result;
 }
+

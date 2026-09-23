@@ -2,37 +2,119 @@
 #include "efi_mmap.h"
 #include "efi_malloc.h"
 
-EFI_STATUS init_pmm(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable, pmm **pm)
+/* Extra pm_block slots for conventional-memory descriptors that appear
+   between the provisional map and the final one (allocations split regions). */
+#define PMM_BLOCK_SLACK 16
+
+static int is_ram_type(UINT32 type)
+{
+    switch(type)
+    {
+        case EfiLoaderCode:
+        case EfiLoaderData:
+        case EfiBootServicesCode:
+        case EfiBootServicesData:
+        case EfiConventionalMemory:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+/* Size the PMM from a provisional memory map and allocate storage for it.
+   Only RAM that the firmware could hand back as conventional memory counts
+   towards the bitmap size, so MMIO windows don't inflate it. */
+EFI_STATUS reserve_pmm(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable, pmm_storage *storage)
 {
     efi_mmap_t mmap = { 0, 0, 0, 0, 0 };
-    if(getEFIMemoryMap(ImageHandle, SystemTable, &mmap) != EFI_SUCCESS)
+    EFI_STATUS result = getEFIMemoryMap(ImageHandle, SystemTable, &mmap);
+    if(result != EFI_SUCCESS)
     {
         Print(L"Error getting EFI memory map.\n");
-        return 0;
+        return result;
     }
 
-    pmm *physical_memory = (pmm *)efi_malloc(sizeof(pmm));
-
-    physical_memory->block_count = countPhysicalMemoryBlocks(mmap);
-    physical_memory->blocks = (pm_block **)efi_malloc(sizeof(pm_block) * physical_memory->block_count);
-
-    for(size_t i = 0; i < physical_memory->block_count; i++)
+    size_t block_count = 0;
+    uint64_t ram_frames = 0;
+    for(uint64_t offset = mmap.start; offset < mmap.end; offset += mmap.descriptorSize)
     {
-        pm_block *block = (pm_block *)efi_malloc(sizeof(pm_block));
-        physical_memory->blocks[i] = block;
-        setupPhysicalMemoryBlock(mmap, block, i);
+        EFI_MEMORY_DESCRIPTOR *desc = (EFI_MEMORY_DESCRIPTOR *)offset;
+        if(desc->Type == EfiConventionalMemory) block_count++;
+        if(is_ram_type(desc->Type)) ram_frames += desc->NumberOfPages;
+    }
+    efi_free((void *)mmap.start);
 
-        // Print(L"Creating memory block %d at 0x%llx. %d frames total. %d frames free.\n", i, block, block->frames_total, block->frames_free);
+    storage->block_capacity = block_count + PMM_BLOCK_SLACK;
+    /* Each block wastes at most one partial word, hence + block_capacity. */
+    storage->bitmap_words = ram_frames / 64 + storage->block_capacity;
 
-        uint64_t map_size = frame_map_size(block->frames_total);
-        if(map_size < 1) map_size++;
+    size_t bytes = sizeof(pmm)
+                 + storage->block_capacity * sizeof(pm_block *)
+                 + storage->block_capacity * sizeof(pm_block)
+                 + storage->bitmap_words * sizeof(uint64_t);
 
-        block->map = (uint64_t *)efi_malloc(map_size * sizeof(uint64_t));
-        for(size_t j = 0; j < map_size; j++) block->map[j] = 0;
+    uint8_t *p = efi_malloc(bytes);
+    if(p == NULL)
+    {
+        Print(L"Could not allocate %d bytes for the PMM.\n", bytes);
+        return EFI_OUT_OF_RESOURCES;
     }
 
-    *pm = physical_memory;
+    storage->physical_memory = (pmm *)p;
+    p += sizeof(pmm);
+    storage->physical_memory->blocks = (pm_block **)p;
+    p += storage->block_capacity * sizeof(pm_block *);
+    for(size_t i = 0; i < storage->block_capacity; i++)
+    {
+        storage->physical_memory->blocks[i] = (pm_block *)p;
+        p += sizeof(pm_block);
+    }
+    storage->bitmap = (uint64_t *)p;
+    storage->physical_memory->block_count = 0;
+
     return EFI_SUCCESS;
+}
+
+/* Fill the PMM from the final memory map. Runs after ExitBootServices, so it
+   must not allocate or Print. Everything that isn't EfiConventionalMemory,
+   including the PMM storage itself (EfiLoaderData), stays out of the PMM.
+   If the storage runs out, the remaining regions are left unmanaged, which
+   wastes memory but never hands out a frame that's in use. */
+void build_pmm(pmm_storage *storage, efi_mmap_t mmap)
+{
+    pmm *physical_memory = storage->physical_memory;
+    uint64_t *next_map = storage->bitmap;
+    size_t words_left = storage->bitmap_words;
+
+    physical_memory->block_count = 0;
+
+    for(uint64_t offset = mmap.start; offset < mmap.end; offset += mmap.descriptorSize)
+    {
+        EFI_MEMORY_DESCRIPTOR *desc = (EFI_MEMORY_DESCRIPTOR *)offset;
+        if(desc->Type != EfiConventionalMemory || desc->NumberOfPages == 0) continue;
+        if(physical_memory->block_count == storage->block_capacity) break;
+
+        size_t words = frame_map_size(desc->NumberOfPages);
+        if(words > words_left) break;
+
+        pm_block *block = physical_memory->blocks[physical_memory->block_count++];
+        block->address = desc->PhysicalStart;
+        block->frames_total = block->frames_free = desc->NumberOfPages;
+        block->map = next_map;
+
+        for(size_t j = 0; j < words; j++) block->map[j] = 0;
+        /* Mark the bits past the end of the block in its last word as used. */
+        if(desc->NumberOfPages % 64) block->map[words - 1] = ~0ULL << (desc->NumberOfPages % 64);
+        /* Never hand out physical address 0: callers can't tell it from NULL. */
+        if(block->address == 0)
+        {
+            block->map[0] |= 1;
+            block->frames_free--;
+        }
+
+        next_map += words;
+        words_left -= words;
+    }
 }
 
 void dump_pmm(pmm *pm)

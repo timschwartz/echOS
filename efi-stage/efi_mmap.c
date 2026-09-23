@@ -7,19 +7,19 @@ EFI_STATUS getEFIMemoryMap(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
     EFI_MEMORY_DESCRIPTOR *memoryMap = NULL;
     UINT32 descriptorVersion = 1;
 
-    while(EFI_SUCCESS != (result = uefi_call_wrapper((void *)SystemTable->BootServices->GetMemoryMap, 5, &(mmap->size),
+    while(EFI_SUCCESS != (result = uefi_call_wrapper(SystemTable->BootServices->GetMemoryMap, 5, &(mmap->size),
                                                    memoryMap, &(mmap->key), &(mmap->descriptorSize), &descriptorVersion)))
     {
         if(result != EFI_BUFFER_TOO_SMALL) break;
 
         if(memoryMap != NULL)
         {
-            uefi_call_wrapper((void *)SystemTable->BootServices->FreePool, 1, memoryMap);
+            uefi_call_wrapper(SystemTable->BootServices->FreePool, 1, memoryMap);
             memoryMap = NULL;
         }
 
         mmap->size += 2 * mmap->descriptorSize;
-        result = uefi_call_wrapper((void *)SystemTable->BootServices->AllocatePool, 3, EfiLoaderData, mmap->size, (void **)&memoryMap);
+        result = uefi_call_wrapper(SystemTable->BootServices->AllocatePool, 3, EfiLoaderData, mmap->size, (void **)&memoryMap);
         if(result != EFI_SUCCESS)
         {
             memoryMap = NULL;
@@ -29,7 +29,7 @@ EFI_STATUS getEFIMemoryMap(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
 
     if(result != EFI_SUCCESS)
     {
-        if(memoryMap != NULL) uefi_call_wrapper((void *)SystemTable->BootServices->FreePool, 1, memoryMap);
+        if(memoryMap != NULL) uefi_call_wrapper(SystemTable->BootServices->FreePool, 1, memoryMap);
         mmap->start = mmap->end = 0;
         return result;
     }
@@ -61,60 +61,4 @@ uint32_t getPageCountByType(efi_mmap_t mmap, uint8_t type)
     }
 
     return totalPages;
-}
-
-size_t countPhysicalMemoryBlocks(efi_mmap_t mmap)
-{
-    size_t result = 0;
-    const uint8_t conventional_memory = 7;
-
-    uint64_t offset = mmap.start;
-    EFI_MEMORY_DESCRIPTOR *desc = NULL;
-    while(offset < mmap.end)
-    {
-        desc = (EFI_MEMORY_DESCRIPTOR *)offset;
-
-        if(desc->Type != conventional_memory)
-        {
-            offset += mmap.descriptorSize;
-            continue;
-        }
-
-        result++;
-
-        offset += mmap.descriptorSize;
-    }
-
-    return result;
-}
-
-EFI_STATUS setupPhysicalMemoryBlock(efi_mmap_t mmap, pm_block *block, const size_t block_index)
-{
-    const uint8_t conventional_memory = 7;
-
-    uint64_t offset = mmap.start;
-    size_t counter = 0;
-    EFI_MEMORY_DESCRIPTOR *desc = NULL;
-    while(offset < mmap.end)
-    {
-        desc = (EFI_MEMORY_DESCRIPTOR *)offset;
-
-        if(desc->Type != conventional_memory)
-        {
-            offset += mmap.descriptorSize;
-            continue;
-        }
-
-        if(block_index == counter)
-        {
-            block->frames_total = block->frames_free = desc->NumberOfPages;
-            block->address = desc->PhysicalStart;
-            return EFI_SUCCESS;
-        }
-
-        counter++;
-        if(counter > block_index) return EFI_NOT_FOUND;
-        offset += mmap.descriptorSize;
-    }
-    return EFI_NOT_FOUND;
 }

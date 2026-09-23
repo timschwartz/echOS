@@ -40,9 +40,11 @@ EFI_STATUS efi_fread (CHAR16 *filename, size_t *length, uint8_t **buffer)
     }
 
     EFI_GUID FILE_INFO = EFI_FILE_INFO_ID;
-    EFI_FILE_INFO *info;
-    size_t info_length = sizeof(EFI_FILE_INFO) + 200;
+    UINT64 info_buffer[(sizeof(EFI_FILE_INFO) + 512) / sizeof(UINT64)];
+    EFI_FILE_INFO *info = (EFI_FILE_INFO *)info_buffer;
+    UINTN info_length = sizeof(info_buffer);
     result = uefi_call_wrapper(file->GetInfo, 4, file, &FILE_INFO, &info_length, info);
+    if(EFI_ERROR(result)) return result;
     *length = info->FileSize;
 
     *buffer = (uint8_t *)efi_malloc(*length);
