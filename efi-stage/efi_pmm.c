@@ -96,7 +96,6 @@ void build_pmm(pmm_storage *storage, efi_mmap_t mmap)
         pm_block *block = physical_memory->blocks[physical_memory->block_count++];
         block->address = desc->PhysicalStart;
         block->frames_total = block->frames_free = desc->NumberOfPages;
-        block->frames_free = 0;
         block->map = NULL;
         block->attributes = desc->Attribute;
 
