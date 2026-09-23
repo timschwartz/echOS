@@ -76,10 +76,9 @@ EFI_STATUS reserve_pmm(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable, pm
 }
 
 /* Fill the PMM from the final memory map. Runs after ExitBootServices, so it
-   must not allocate or Print. Everything that isn't EfiConventionalMemory,
-   including the PMM storage itself (EfiLoaderData), stays out of the PMM.
-   If the storage runs out, the remaining regions are left unmanaged, which
-   wastes memory but never hands out a frame that's in use. */
+   must not allocate or Print. If the storage runs out, the remaining regions 
+   are left unmanaged, which wastes memory but never hands out a frame that's
+   in use. */
 void build_pmm(pmm_storage *storage, efi_mmap_t mmap)
 {
     pmm *physical_memory = storage->physical_memory;
@@ -91,16 +90,53 @@ void build_pmm(pmm_storage *storage, efi_mmap_t mmap)
     for(uint64_t offset = mmap.start; offset < mmap.end; offset += mmap.descriptorSize)
     {
         EFI_MEMORY_DESCRIPTOR *desc = (EFI_MEMORY_DESCRIPTOR *)offset;
-        if(desc->Type != EfiConventionalMemory || desc->NumberOfPages == 0) continue;
+        if(desc->NumberOfPages == 0) continue;
         if(physical_memory->block_count == storage->block_capacity) break;
-
-        size_t words = frame_map_size(desc->NumberOfPages);
-        if(words > words_left) break;
 
         pm_block *block = physical_memory->blocks[physical_memory->block_count++];
         block->address = desc->PhysicalStart;
         block->frames_total = block->frames_free = desc->NumberOfPages;
+        block->frames_free = 0;
+        block->map = NULL;
+        block->attributes = desc->Attribute;
+
+        switch(desc->Type)
+        {
+            case EfiConventionalMemory:
+                block->type = PM_USABLE;
+                break;
+            case EfiLoaderCode:
+            case EfiLoaderData:
+            case EfiBootServicesCode:
+            case EfiBootServicesData:
+                block->type = PM_RECLAIMABLE;
+                break;
+            case EfiACPIReclaimMemory:
+                block->type = PM_ACPI_RECLAIM;
+                break;
+            case EfiACPIMemoryNVS:
+                block->type = PM_ACPI_NVS;
+                break;
+            case EfiRuntimeServicesCode:
+            case EfiRuntimeServicesData:
+                block->type = PM_FIRMWARE;
+                break;
+            case EfiMemoryMappedIO:
+            case EfiMemoryMappedIOPortSpace:
+                block->type = PM_MMIO;
+                break;
+            default:
+                block->type = PM_RESERVED;
+                break;
+        }
+
+        if(block->type != PM_USABLE && block->type != PM_RECLAIMABLE) continue;
+
+        size_t words = frame_map_size(desc->NumberOfPages);
+        if(words > words_left) continue;
         block->map = next_map;
+        next_map += words;
+        words_left -= words;
 
         for(size_t j = 0; j < words; j++) block->map[j] = 0;
         /* Mark the bits past the end of the block in its last word as used. */
@@ -111,9 +147,6 @@ void build_pmm(pmm_storage *storage, efi_mmap_t mmap)
             block->map[0] |= 1;
             block->frames_free--;
         }
-
-        next_map += words;
-        words_left -= words;
     }
 }
 

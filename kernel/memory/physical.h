@@ -4,12 +4,25 @@
 #define frame_size 4096
 #define frame_map_size(frame_count) ((frame_count + 63) / 64)
 
+typedef enum
+{
+    PM_USABLE,
+    PM_RECLAIMABLE,
+    PM_ACPI_RECLAIM,
+    PM_ACPI_NVS,
+    PM_FIRMWARE,
+    PM_MMIO,
+    PM_RESERVED,
+} pm_type;
+
 typedef struct
 {
     uint64_t address;
     uint64_t frames_total;
     uint64_t frames_free;
     uint64_t *map;
+    pm_type type;
+    uint64_t attributes;
 } pm_block;
 
 typedef struct
