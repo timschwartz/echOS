@@ -2,8 +2,8 @@
 #include "efi_mmap.h"
 #include "efi_malloc.h"
 
-/* Extra pm_block slots for conventional-memory descriptors that appear
-   between the provisional map and the final one (allocations split regions). */
+/* Extra pm_block slots for descriptors that appear between the provisional
+   map and the final one (allocations split regions). */
 #define PMM_BLOCK_SLACK 16
 
 static int is_ram_type(UINT32 type)
@@ -39,7 +39,8 @@ EFI_STATUS reserve_pmm(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable, pm
     for(uint64_t offset = mmap.start; offset < mmap.end; offset += mmap.descriptorSize)
     {
         EFI_MEMORY_DESCRIPTOR *desc = (EFI_MEMORY_DESCRIPTOR *)offset;
-        if(desc->Type == EfiConventionalMemory) block_count++;
+        /* build_pmm keeps a block for every descriptor, not just conventional memory. */
+        if(desc->NumberOfPages) block_count++;
         if(is_ram_type(desc->Type)) ram_frames += desc->NumberOfPages;
     }
     efi_free((void *)mmap.start);
@@ -76,9 +77,11 @@ EFI_STATUS reserve_pmm(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable, pm
 }
 
 /* Fill the PMM from the final memory map. Runs after ExitBootServices, so it
-   must not allocate or Print. If the storage runs out, the remaining regions 
-   are left unmanaged, which wastes memory but never hands out a frame that's
-   in use. */
+   must not allocate or Print. Only PM_USABLE frames start out free.
+   PM_RECLAIMABLE blocks get a bitmap with every frame marked used: they hold
+   the kernel, the PMM itself and the firmware's page tables, and can be freed
+   into later. If the storage runs out, the remaining regions are left
+   unmanaged, which wastes memory but never hands out a frame that's in use. */
 void build_pmm(pmm_storage *storage, efi_mmap_t mmap)
 {
     pmm *physical_memory = storage->physical_memory;
@@ -95,7 +98,8 @@ void build_pmm(pmm_storage *storage, efi_mmap_t mmap)
 
         pm_block *block = physical_memory->blocks[physical_memory->block_count++];
         block->address = desc->PhysicalStart;
-        block->frames_total = block->frames_free = desc->NumberOfPages;
+        block->frames_total = desc->NumberOfPages;
+        block->frames_free = 0;   // set below, for PM_USABLE blocks only
         block->map = NULL;
         block->attributes = desc->Attribute;
 
@@ -137,7 +141,14 @@ void build_pmm(pmm_storage *storage, efi_mmap_t mmap)
         next_map += words;
         words_left -= words;
 
+        if(block->type == PM_RECLAIMABLE)
+        {
+            for(size_t j = 0; j < words; j++) block->map[j] = ~0ULL;
+            continue;
+        }
+
         for(size_t j = 0; j < words; j++) block->map[j] = 0;
+        block->frames_free = desc->NumberOfPages;
         /* Mark the bits past the end of the block in its last word as used. */
         if(desc->NumberOfPages % 64) block->map[words - 1] = ~0ULL << (desc->NumberOfPages % 64);
         /* Never hand out physical address 0: callers can't tell it from NULL. */

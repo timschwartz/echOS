@@ -24,6 +24,8 @@ uint64_t frame_allocate_from_block(pm_block *block)
 
 void frame_free_from_block(pm_block *block, uint64_t address)
 {
+    if(block->map == NULL) return;   // unmanaged region
+
     uint64_t offset = address - block->address;
     uint64_t frame_offset = offset / frame_size;
     uint64_t entry = frame_offset / 64;
