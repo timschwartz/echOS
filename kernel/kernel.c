@@ -7,6 +7,39 @@ colonel_t *system;
 
 const size_t gdt_entry_count = 5;
 
+/* Build page tables that identity map every region the kernel may still
+   touch, then switch to them: RAM of every kind the firmware reported (the
+   kernel image, its stack, the PMM, boot data and the page tables all live
+   there), ACPI and runtime regions, and the framebuffer. Page 0 stays
+   unmapped so NULL dereferences fault. */
+static int init_paging(void)
+{
+    pmm *pm = system->physical_memory;
+
+    system->pml4 = init_pml4(pm);
+    if(system->pml4 == NULL) return -1;
+
+    for(size_t i = 0; i < pm->block_count; i++)
+    {
+        pm_block *block = pm->blocks[i];
+        if(block->type == PM_MMIO || block->type == PM_RESERVED) continue;
+
+        uint64_t start = block->address;
+        uint64_t end = start + block->frames_total * frame_size;
+        if(start < frame_size) start = frame_size;
+        if(start >= end) continue;
+
+        if(map_range(pm, system->pml4, start, start, end - start, READ_WRITE_BIT) != 0) return -1;
+    }
+
+    uint64_t fb_start = (uint64_t)system->fb.buffer;
+    uint64_t fb_length = system->fb.pixels_per_scanline * system->fb.height * 4;
+    if(map_range(pm, system->pml4, fb_start, fb_start, fb_length, READ_WRITE_BIT) != 0) return -1;
+
+    set_cr3((uint64_t)system->pml4);
+    return 0;
+}
+
 void kernel_start(colonel_t *sys)
 {
     system = sys;
@@ -64,10 +97,12 @@ void kernel_start(colonel_t *sys)
     ssfn_printf(system->fb, "Setup GDT at 0x%x, limit: 0x%x.\n", system->gdt->base, system->gdt->limit);
     /* End setup GDT */
 
-    system->pml4 = init_pml4(system->physical_memory);
-    map_page(system->physical_memory, system->pml4, 0x2000, 0x2000, PRESENT_BIT | READ_WRITE_BIT);
-
-    ssfn_printf(system->fb, "Created kernel PML4 at 0x%x.\n", system->pml4);
+    if(init_paging() != 0)
+    {
+        ssfn_printf(system->fb, "Failed to build kernel page tables.\n");
+        for(;;) __asm__ ("hlt");
+    }
+    ssfn_printf(system->fb, "Loaded kernel PML4 at 0x%llx.\n", system->pml4);
 
     for(;;) __asm__ ("hlt");
 

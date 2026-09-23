@@ -3,6 +3,10 @@
 #include "physical.h"
 
 #define page_size 4096
+#define large_page_size 0x200000ULL
+
+/* Bits 12-51 of an entry hold the physical address. */
+#define PHYS_ADDR_MASK 0x000FFFFFFFFFF000ULL
 
 #define PRESENT_BIT 0x1
 #define READ_WRITE_BIT 0x2
@@ -45,9 +49,6 @@ typedef uint64_t page_directory_pointer_entry;
 typedef uint64_t page_map_level_4_entry;
 typedef page_map_level_4_entry *page_map_level_4;
 
-page_directory_entry init_pd_entry(pmm *, uint64_t);
-page_directory_pointer_entry init_pdp_entry(pmm *, uint64_t);
-page_map_level_4_entry init_pml4_entry(pmm *, uint64_t);
 page_map_level_4 init_pml4(pmm *);
 
 page_directory_pointer_entry *get_pdp(page_map_level_4_entry entry);
@@ -57,7 +58,11 @@ page_map_level_4 get_pml4(void);
 uint64_t get_cr(size_t index);
 void set_cr3(uint64_t entry);
 
-void map_page(pmm *physical_memory, page_map_level_4 pml4, uint64_t vaddr, uint64_t paddr, uint64_t flags);
+/* These return 0 on success and -1 if a frame couldn't be allocated or the
+   range overlaps an incompatible existing mapping. */
+int map_page(pmm *physical_memory, page_map_level_4 pml4, uint64_t vaddr, uint64_t paddr, uint64_t flags);
+int map_large_page(pmm *physical_memory, page_map_level_4 pml4, uint64_t vaddr, uint64_t paddr, uint64_t flags);
+int map_range(pmm *physical_memory, page_map_level_4 pml4, uint64_t vaddr, uint64_t paddr, uint64_t length, uint64_t flags);
 
 void dump_pte(page_table_entry entry);
 void dump_pde(page_directory_entry entry);
