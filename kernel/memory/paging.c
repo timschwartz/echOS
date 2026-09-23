@@ -82,10 +82,9 @@ uint64_t get_cr(size_t index)
 void set_cr3(uint64_t entry)
 {
     __asm__ __volatile__ (
-        "mov %%rax, %0\n\t"
-        "mov %%cr3, %%rax\n\t"
+        "mov %0, %%cr3"
         :
-        : "m" (entry)
+        : "r" (entry)
         : "memory"
     );
 }
